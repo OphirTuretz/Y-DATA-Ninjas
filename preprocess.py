@@ -32,4 +32,4 @@ test_file_path = os.path.join(output_folder, "test.csv")
 train_data.to_csv(train_file_path, index=False)
 test_data.to_csv(test_file_path, index=False)
 
-print(f"Train and test datasets saved:\n - Train: {train_file_path}\n - Test: {test_file_path}")
+# print(f"Train and test datasets saved:\n - Train: {train_file_path}\n - Test: {test_file_path}")
