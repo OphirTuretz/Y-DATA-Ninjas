@@ -1,3 +1,6 @@
+import os
+import wandb
+import pickle
 import argparse
 import numpy as np
 import pandas as pd
@@ -5,44 +8,43 @@ from typing import Tuple
 from sklearn.dummy import DummyClassifier
 from app.const import (
     DEFAULT_CSV_TRAIN_PATH,
-    DEFAULT_CSV_TEST_PATH,
     FEATURES_LIST,
+    TARGET_COLUMN,
+    MODELS_FOLDER,
+    DEFAULT_MODEL_PATH,
+    WANDB_PROJECT,
 )
 
 
-def save_data(df: pd.DataFrame, path: str):
-    print(f"Saving data to {path}...")
-    df.to_csv(path, index=False)
-    print("Data saved.")
+def save_model(model):
+    print(f"Saving model...")
+
+    if not os.path.exists(MODELS_FOLDER):
+        os.makedirs(MODELS_FOLDER)
+
+    with open(DEFAULT_MODEL_PATH, "wb") as f:
+        pickle.dump(model, f)
+
+    print("Model saved.")
 
 
-def fit_model(model, X_train, y_train):
+def fit_model(model, X, y):
     print("Fitting model...")
-    model.fit(X_train, y_train)
+    model.fit(X, y)
     print("Model fitted.")
     return model
 
 
-def extract_features_target(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+def prepare_data(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    print("Preparing data...")
     print("Extracting features...")
-    features = df[FEATURES_LIST]
+    X = df[FEATURES_LIST].to_numpy()
     print("Features extracted.")
     print("Extracting target...")
-    target = df["is_click"]
+    y = df[TARGET_COLUMN].to_numpy()
     print("Target extracted.")
-    return features.to_numpy(), target.to_numpy()
-
-
-def prepare_train_test_data(
-    train_df: pd.DataFrame, test_df: pd.DataFrame
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    print("Preparing training data...")
-    X_train, y_train = extract_features_target(train_df)
     print("Data prepared.")
-    print("Preparing test data...")
-    X_test, y_test = extract_features_target(test_df)
-    print("Data prepared.")
-    return X_train, X_test, y_train, y_test
+    return X, y
 
 
 def load_data(path: str) -> pd.DataFrame:
@@ -54,26 +56,29 @@ def load_data(path: str) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    print("train.py started...")
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
         "-ctp", "--csv-train-path", default=DEFAULT_CSV_TRAIN_PATH, type=str
     )
-    parser.add_argument(
-        "-ctep", "--csv-test-path", default=DEFAULT_CSV_TEST_PATH, type=str
-    )
+
+    parser.add_argument("-wgid", "--wandb-group-id", default=None)
 
     args = parser.parse_args()
 
-    train_df = load_data(args.csv_train_path)
-    test_df = load_data(args.csv_test_path)
+    # wandb.init(project=WANDB_PROJECT, group=args.wandb_group_id, job_type="train")
 
-    X_train, X_test, y_train, y_test = prepare_train_test_data(train_df, test_df)
+    train_df = load_data(args.csv_train_path)
+    X_train, y_train = prepare_data(train_df)
 
     model = DummyClassifier()
     model = fit_model(model, X_train, y_train)
 
-    # TODO: Evaluate the model on the training and test set
-    # TODO: Save the model
+    save_model(model)
 
-    print("Training done.")
+    # TODO: Log the model to W&B (run.log_model(path="<path-to-model>", name="<name>"))
+    # TODO: Evaluate the model on the training and test set
+
+    print("train.py finished.")

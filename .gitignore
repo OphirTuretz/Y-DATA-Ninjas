@@ -3,6 +3,7 @@ data/
 models/
 results/
 archived_experiments/
+wandb/
 
 
 # Created by .ignore support plugin (hsz.mobi)
