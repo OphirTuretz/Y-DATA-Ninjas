@@ -6,3 +6,4 @@ seaborn
 invoke
 wandb
 wandb[media]
+xgboost
