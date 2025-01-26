@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 import json
+import os
 from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.metrics import accuracy_score, classification_report
@@ -12,20 +13,29 @@ from sklearn.tree import DecisionTreeClassifier
 
 
 # get data
+def get_latest_file(suffix):
+    """Find the latest file in the 'data' directory with the specified suffix."""
+    files = [f for f in os.listdir("data") if f.endswith(suffix)]
+    if not files:
+        raise FileNotFoundError(f"No files found with suffix '{suffix}' in the 'data' directory.")
+    latest_file = max(files, key=lambda x: os.path.getctime(os.path.join("data", x)))
+    return os.path.join("data", latest_file)
+
 def get_data():
-    train_data = pd.read_csv("data/random_forest_A_20250125_211951_train.csv") # TODO automatically choose the last file that ends with _test
-    test_data = pd.read_csv("data/random_forest_A_20250125_211951_test.csv")
-    val_data = pd.read_csv("data/random_forest_A_20250125_211951_val.csv")
+    """Automatically fetch the latest train, test, and validation datasets."""
+    train_data = pd.read_csv(get_latest_file("_train.csv"))
+    test_data = pd.read_csv(get_latest_file("_test.csv"))
+    val_data = pd.read_csv(get_latest_file("_val.csv"))
     return train_data, test_data, val_data
 
-def train(model_name: str, param_grid_file: str, target_col: str, n_estimators: int = None):
+def train(model_name: str, param_grid_file: str, target_col: str, max_features: int = None):
     """
     Trains a model with the specified parameters.
 
     :param model_name: Name of the model (e.g., 'random_forest').
     :param param_grid_file: Path to the JSON file containing the parameter grid.
     :param target_col: Name of the target column.
-    :param n_estimators: Number of estimators for the model.
+    :param max_features: Number of estimators for the model.
     """
     # **Load parameter grid from JSON file**
     try:
@@ -41,7 +51,7 @@ def train(model_name: str, param_grid_file: str, target_col: str, n_estimators: 
     if not param_grid:
         raise ValueError(f"No parameter grid found for model '{model_name}' in {param_grid_file}")
 
-    print(f"Training model '{model_name}' with {n_estimators} estimators and param_grid:")
+    print(f"Training model '{model_name}' with {max_features} max features and param_grid:")
     print(param_grid)
 
     train_data, test_data, val_data = get_data()
@@ -59,26 +69,25 @@ def train(model_name: str, param_grid_file: str, target_col: str, n_estimators: 
         #'xgboost': XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42),
         #'catboost': CatBoostClassifier(random_state=42),
         # 'hist_grad_boost': HistGradientBoostingClassifier(random_state=42, categorical_features=[] )
+        # 'gradient_boosting'
     }
 
     # Select the model
     model = models.get(model_name)
-    if not model:
-        raise ValueError(f"Model '{model_name}' is not supported.")
     print("Model name:", model_name)
 
     # Feature selection
-    if n_estimators:
-        # Use the selected model for feature selection
-        if hasattr(model, 'n_estimators'):
-            model_for_fs = model.__class__(n_estimators=n_estimators, random_state=42)
-        else:
-            # For models without n_estimators, use RandomForestClassifier as default
-            model_for_fs = RandomForestClassifier(n_estimators=n_estimators, random_state=42)
+    if max_features:
 
-        selector = SelectFromModel(model_for_fs)
+        # Get the model instance and class
+        model_instance = models[model_name]  # Model instance with parameters
+        model_class = model_instance.__class__  # Extract class without parameters
+
+        # Feature selection: Create a clean model for feature selection
+        model_for_fs = model_class(random_state=42)
 
         # Fit the selector on x_train and y_train
+        selector = SelectFromModel(model_for_fs, max_features=max_features)
         selector.fit(x_train, y_train)
 
         # Transform both x_train, x_val, and x_test
@@ -95,7 +104,7 @@ def train(model_name: str, param_grid_file: str, target_col: str, n_estimators: 
         x_test = pd.DataFrame(x_test_selected, columns=selected_feature_names)
 
     # Use validation set for grid search
-    grid_search = GridSearchCV(model, param_grid[model_name], n_jobs=-1, cv=1)  # TODO make grid sear optional?
+    grid_search = GridSearchCV(model, param_grid, n_jobs=-1, cv=2)  # TODO make grid sear optional?
     grid_search.fit(x_val, y_val)
 
     best_model = grid_search.best_estimator_
@@ -116,7 +125,6 @@ def train(model_name: str, param_grid_file: str, target_col: str, n_estimators: 
     report_val = classification_report(y_val, y_pred_val)
     print(f"best validation accuracy with grid Search: {accuracy_val:.4f}")
     print("Validation classification report:", report_val)
-
 
     y_pred_test = best_model.predict(x_test)
     accuracy_test = accuracy_score(y_test, y_pred_test)
@@ -142,8 +150,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Trainer")
     parser.add_argument('-m', '--model-name', default="random_forest", help="Name of the model")
     parser.add_argument('--param-grid-file', type=str, required=True, help="Path to the parameter grid JSON file")
-    parser.add_argument('--n-estimators', type=int, default=100, help="Number of estimators")
     parser.add_argument('--target-col', type=str, default='is_click', help="Target column name")
+    parser.add_argument('--max-features', type=int, default=100, help="Number of features")
+
 
     args = parser.parse_args()
 
@@ -152,7 +161,7 @@ if __name__ == '__main__':
         model_name=args.model_name,
         param_grid_file=args.param_grid_file,  # Pass the file path
         target_col=args.target_col,
-        n_estimators=args.n_estimators
+        max_features=args.max_features
     )
 
 

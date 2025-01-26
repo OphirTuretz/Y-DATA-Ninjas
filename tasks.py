@@ -22,7 +22,7 @@ param_grids = {
         'max_depth': [None, 10, 20],
         'min_samples_split': [2, 5],
         'min_samples_leaf': [1, 2],
-        # 'bootstrap': [True, False]
+
     },
     'decision_tree': {
         'max_depth': [None, 10, 20],
@@ -36,6 +36,7 @@ param_grids = {
 with open("param_grid.json", "w") as file:
     json.dump(param_grids, file, indent=4)
 
+# 'bootstrap': [True, False]
 #,
     # 'light_gbm': {
     #     'num_leaves': [31, 40],
@@ -67,7 +68,7 @@ BEST_MODEL = "models/best_model.joblib"
 RAW_DATA_PATH = "data/train_dataset_full.csv"
 PREPROCESSED_DATA_PATH = "data/preprocessed_data.csv"
 PREDICTIONS_PATH = "data/predictions.csv"
-DEFAULT_N_ESTIMATORS = 100
+DEFAULT_MAX_FEATURES = 100
 DEFAULT_TREAT_NULL = 'A'
 
 
@@ -95,7 +96,7 @@ def preprocess(c, treat_null=DEFAULT_TREAT_NULL, model_name="random_forest"):
 
 
 @task
-def train(c, model_name="random_forest", param_grid_file="param_grid.json", target_col=target_col, n_estimators=DEFAULT_N_ESTIMATORS):
+def train(c, model_name="random_forest", param_grid_file="param_grid.json", target_col=target_col, max_features=DEFAULT_MAX_FEATURES):
     """Runs the training step."""
     # Validate if the param_grid_file exists
     if not os.path.exists(param_grid_file):
@@ -105,67 +106,76 @@ def train(c, model_name="random_forest", param_grid_file="param_grid.json", targ
     # Call train.py with the path to the param_grid_file
     c.run(f"python train.py --model-name {model_name} "
           f"--param-grid-file {param_grid_file} "
-          f"--n_estimators {n_estimators} "
-          f"--target_col {target_col}"
+          f"--target-col {target_col} "
+          f"--max-features {max_features}"
           )
 
+# @task
+# def predict(c, csv_path=PREPROCESSED_DATA_PATH, model_path=BEST_MODEL, output_path=PREDICTIONS_PATH):
+#     """Runs the prediction step."""
+#     c.run(f"python predict.py --csv-path {csv_path} "
+#           f"--model-path {model_path} "
+#           f"--output-csv-path {output_path}")
+#
+#
+# @task
+# def evaluate(c, predictions_path=PREDICTIONS_PATH):
+#     """Runs the evaluation step."""
+#     c.run(f"python results.py --csv-path {predictions_path}")
+#
+#
+# @task
+# def pipeline(c, model_name="random_forest", max_features=DEFAULT_MAX_FEATURES,
+#              treat_null=DEFAULT_TREAT_NULL, param_grid_file="param_grid.json", target_col=target_col):
+#     """Runs the entire data processing and training pipeline."""
+#     prepare_data_for_pipeline(c)
+#     preprocess(c, treat_null, model_name)
+#     train(c, model_name=model_name, param_grid_file=param_grid_file, max_features=max_features, target_col=target_col)
+#     predict(c)
+#     evaluate(c)
+#
+#
 @task
-def predict(c, csv_path=PREPROCESSED_DATA_PATH, model_path=BEST_MODEL, output_path=PREDICTIONS_PATH):
-    """Runs the prediction step."""
-    c.run(f"python predict.py --csv-path {csv_path} "
-          f"--model-path {model_path} "
-          f"--output-csv-path {output_path}")
-
-
-@task
-def evaluate(c, predictions_path=PREDICTIONS_PATH):
-    """Runs the evaluation step."""
-    c.run(f"python results.py --csv-path {predictions_path}")
-
-
-@task
-def pipeline(c, model_name="random_forest", n_estimators=DEFAULT_N_ESTIMATORS,
-             treat_null=DEFAULT_TREAT_NULL, param_grid_file="param_grid.json"):
-    """Runs the entire data processing and training pipeline."""
-    prepare_data_for_pipeline(c)
-    preprocess(c, treat_null, model_name)
-    train(c, model_name, param_grid_file,target_col, n_estimators)
-    predict(c)
-    evaluate(c)
-
-@task
-def preprocess_and_train(c, model_name="random_forest", n_estimators=DEFAULT_N_ESTIMATORS, treat_null=DEFAULT_TREAT_NULL):
+def preprocess_and_train(c, model_name="random_forest", max_features=DEFAULT_MAX_FEATURES, param_grid_file="param_grid.json",
+                         treat_null=DEFAULT_TREAT_NULL, target_col=target_col):
     """Runs the preprocessing and training steps."""
     preprocess(c, treat_null, model_name)
-    train(c, model_name, n_estimators)
+    train(c, model_name=model_name, param_grid_file="param_grid.json", max_features=max_features, target_col=target_col)
+#
+# @task
+# def archive(c, name, base_folder="archived_experiments"):
+#     """Archives an experiment by creating a new directory with a timestamped name."""
+#     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+#     name = f"{timestamp}_{name}"
+#     print(f"Archived experiment: {name}")
+#     if not os.path.exists(base_folder):
+#         os.makedirs(base_folder)
+#
+#     exp_path = os.path.join(base_folder, name)
+#     os.makedirs(exp_path)
+#
+#     # Copy data, models, and results to the archive folder
+#     if os.path.exists("data"):
+#         c.run(f"cp -r data {exp_path}/")
+#     if os.path.exists("models"):
+#         c.run(f"cp -r models {exp_path}/")
+#     if os.path.exists("results"):
+#         c.run(f"cp -r results {exp_path}/")
+#
+#     print(f"Experiment archived in: {exp_path}")
 
 
-@task
-def archive(c, name, base_folder="archived_experiments"):
-    """Archives an experiment by creating a new directory with a timestamped name."""
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    name = f"{timestamp}_{name}"
-    print(f"Archived experiment: {name}")
-    if not os.path.exists(base_folder):
-        os.makedirs(base_folder)
-
-    exp_path = os.path.join(base_folder, name)
-    os.makedirs(exp_path)
-
-    # Copy data, models, and results to the archive folder
-    if os.path.exists("data"):
-        c.run(f"cp -r data {exp_path}/")
-    if os.path.exists("models"):
-        c.run(f"cp -r models {exp_path}/")
-    if os.path.exists("results"):
-        c.run(f"cp -r results {exp_path}/")
-
-    print(f"Experiment archived in: {exp_path}")
 
 
-# invoke preprocess-and-train --model-name random_forest --n-estimators 100 --treat-null A
+# examples of invoke:
 
-# invoke train --model-name random_forest --param-grid-file param_grid.json --target-col is_click --n-estimators 50
+# invoke preprocess --treat-null A --model-name random_forest
+
+# invoke train --model-name random_forest --param-grid-file param_grid.json --target-col is_click --max-features 50
+
+
+# invoke preprocess-and-train --model-name random_forest --max-features 100 --treat-null A --param-grid-file param_grid.json
+
 
 
 
@@ -175,4 +185,4 @@ def archive(c, name, base_folder="archived_experiments"):
 
 
 
-# invoke train --model-name random_forest --n-estimators 50 --param-grid '{"max_depth": [null, 10, 20], "min_samples_split": [2, 5], "min_samples_leaf": [1, 2]}'
+# invoke train --model-name random_forest --max-features 50 --param-grid '{"max_depth": [null, 10, 20], "min_samples_split": [2, 5], "min_samples_leaf": [1, 2]}'

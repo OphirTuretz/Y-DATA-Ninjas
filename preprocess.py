@@ -30,7 +30,7 @@ def parse(csv_path, one_hot_cols, binary_cols, ordinal_cols, scale_cols, target_
     float_cols = df.select_dtypes(include=['float64']).columns
     df[float_cols] = df[float_cols].astype('Int64')
 
-    # Fill missing session_id with unique consecutive values # TODO drop session id, and datetime, check user id in test file and decide if to embed or drop
+    # Fill missing session_id with unique consecutive values
     if df['session_id'].isnull().any():
         missing_count = df['session_id'].isnull().sum()
         new_session_ids = [f"F{i}" for i in range(1, missing_count + 1)]
@@ -43,6 +43,8 @@ def parse(csv_path, one_hot_cols, binary_cols, ordinal_cols, scale_cols, target_
     df['current_is_more_than_once'] = (df['current_session_freq'] > 1).astype(int)
     df['current_same_campaign_freq'] = df.groupby(['user_id', 'campaign_id'], observed=True).cumcount() + 1
     df['current_same_product_freq'] = df.groupby(['user_id', 'product'], observed=True).cumcount() + 1
+
+    df.drop(['session_id', 'DateTime'], axis=1, inplace=True) # TODO check user id in test file and decide if to embed or drop
 
     # New Mapping of columns to sequential integers
     mapping = {}
