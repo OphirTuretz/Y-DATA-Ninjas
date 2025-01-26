@@ -2,6 +2,7 @@ from invoke import task
 import datetime
 import os
 import wandb
+from dotenv import load_dotenv
 from app.const import (
     ARCHIVE_FOLDER,
     DATE_TIME_PATTERN,
@@ -25,10 +26,12 @@ def prepare_data_for_pipeline():
 @task
 def pipeline(c):
 
+    # Loading .env environment variables
+    load_dotenv()
+    # prepare_data_for_pipeline()
+    
     # Create a group id that will be shared within the same run
     wandb_group_id = "experiment-" + wandb.util.generate_id()
-
-    # prepare_data_for_pipeline()
 
     # preprocess raw train data
     c.run(f"python preprocess.py --wandb-group-id {wandb_group_id}")
