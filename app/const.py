@@ -57,4 +57,4 @@ DEFAULT_PREDICTIONS_ONLY = False
 
 DATE_TIME_PATTERN = "%Y-%m-%d_%H-%M-%S"
 
-WANDB_PROJECT = "Ophirs-runs"
+WANDB_PROJECT = "Dummy-runs"
