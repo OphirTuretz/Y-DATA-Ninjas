@@ -1,5 +1,9 @@
-scikit-learn
 pandas
+scikit-learn
+xgboost
+joblib
+wandb
+invoke
 numpy
 matplotlib
 seaborn
