@@ -30,6 +30,12 @@ param_grids = {
         'min_samples_leaf': [1, 2]
     }
 
+}
+
+# Save to a JSON file
+with open("param_grid.json", "w") as file:
+    json.dump(param_grids, file, indent=4)
+
 #,
     # 'light_gbm': {
     #     'num_leaves': [31, 40],
@@ -55,7 +61,6 @@ param_grids = {
     #     'learning_rate': [0.05, 0.1],
     #     'min_samples_leaf': [20, 50]
     #}
-}
 
 # ADDED: Paths for the experiments
 BEST_MODEL = "models/best_model.joblib"
@@ -88,24 +93,21 @@ def preprocess(c, treat_null=DEFAULT_TREAT_NULL, model_name="random_forest"):
           f"--treat-null {treat_null} "
           f"--model-name {model_name}")
 
+
 @task
-def train(c, model_name="random_forest", n_estimators=DEFAULT_N_ESTIMATORS, param_grid=None):
+def train(c, model_name="random_forest", param_grid_file="param_grid.json", target_col=target_col, n_estimators=DEFAULT_N_ESTIMATORS):
     """Runs the training step."""
-    if param_grid is None:
-        param_grid = json.dumps(param_grids[model_name])  # Convert Python dict to JSON string
-    else:
-        # Validate if param_grid is a JSON string
-        try:
-            json.loads(param_grid)
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON string for param_grid. Please check the syntax.")
+    # Validate if the param_grid_file exists
+    if not os.path.exists(param_grid_file):
+        raise ValueError(
+            f"The specified param_grid_file '{param_grid_file}' does not exist. Please provide a valid file path.")
 
-    # Ensure param_grid  is wrapped in quotes to pass correctly as a CLI argument
-    param_grid = param_grid.replace('"', '\\"')
-
+    # Call train.py with the path to the param_grid_file
     c.run(f"python train.py --model-name {model_name} "
+          f"--param-grid-file {param_grid_file} "
           f"--n_estimators {n_estimators} "
-          f"--param-grid \"{param_grid}\"")
+          f"--target_col {target_col}"
+          )
 
 @task
 def predict(c, csv_path=PREPROCESSED_DATA_PATH, model_path=BEST_MODEL, output_path=PREDICTIONS_PATH):
@@ -122,11 +124,12 @@ def evaluate(c, predictions_path=PREDICTIONS_PATH):
 
 
 @task
-def pipeline(c, model_name="random_forest", n_estimators=DEFAULT_N_ESTIMATORS, treat_null=DEFAULT_TREAT_NULL):
+def pipeline(c, model_name="random_forest", n_estimators=DEFAULT_N_ESTIMATORS,
+             treat_null=DEFAULT_TREAT_NULL, param_grid_file="param_grid.json"):
     """Runs the entire data processing and training pipeline."""
     prepare_data_for_pipeline(c)
     preprocess(c, treat_null, model_name)
-    train(c, model_name, n_estimators)
+    train(c, model_name, param_grid_file,target_col, n_estimators)
     predict(c)
     evaluate(c)
 
@@ -161,5 +164,15 @@ def archive(c, name, base_folder="archived_experiments"):
 
 
 # invoke preprocess-and-train --model-name random_forest --n-estimators 100 --treat-null A
+
+# invoke train --model-name random_forest --param-grid-file param_grid.json --target-col is_click --n-estimators 50
+
+
+
 # invoke pipeline --model-name random_forest --n_estimators 100 --treat-null A
+
+
+
+
+
 # invoke train --model-name random_forest --n-estimators 50 --param-grid '{"max_depth": [null, 10, 20], "min_samples_split": [2, 5], "min_samples_leaf": [1, 2]}'

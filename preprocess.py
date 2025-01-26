@@ -8,10 +8,10 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 import datetime
 
-# Adjusted function for argparse to run preprocess in pipeline
+
 def parse(csv_path, one_hot_cols, binary_cols, ordinal_cols, scale_cols, target_col,
           train_val=False, treat_null='A', model_name='random_forest'):
-    # Adjusted preprocessing logic
+
     df = pd.read_csv(csv_path)
 
     if train_val:
@@ -30,13 +30,13 @@ def parse(csv_path, one_hot_cols, binary_cols, ordinal_cols, scale_cols, target_
     float_cols = df.select_dtypes(include=['float64']).columns
     df[float_cols] = df[float_cols].astype('Int64')
 
-    # Fill missing session_id with unique consecutive values
+    # Fill missing session_id with unique consecutive values # TODO drop session id, and datetime, check user id in test file and decide if to embed or drop
     if df['session_id'].isnull().any():
         missing_count = df['session_id'].isnull().sum()
         new_session_ids = [f"F{i}" for i in range(1, missing_count + 1)]
         df['session_id'] = df['session_id'].fillna(pd.Series(new_session_ids))
 
-    # Create additional columns
+    # New feature generation
     df['hour'] = df['DateTime'].dt.hour
     df['day_of_week'] = df['DateTime'].dt.day_name()
     df['current_session_freq'] = df.groupby('user_id', observed=True).cumcount() + 1
@@ -123,6 +123,7 @@ def parse(csv_path, one_hot_cols, binary_cols, ordinal_cols, scale_cols, target_
     train_data.to_csv(f"data/{filename_format.format(data_type='train')}", index=False)
     val_data.to_csv(f"data/{filename_format.format(data_type='val')}", index=False)
     test_data.to_csv(f"data/{filename_format.format(data_type='test')}", index=False)
+    mapping_df.to_csv(f"data/{filename_format.format(data_type='mapping')}", index=False)
 
     return x_train, x_test, y_train, y_test, x_val, y_val, mapping_df
 
