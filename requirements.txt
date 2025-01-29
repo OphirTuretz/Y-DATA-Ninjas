@@ -7,3 +7,8 @@ invoke
 wandb
 wandb[media]
 xgboost
+python-dotenv
+catboost
+lightgbm
+lightgbm[pandas]
+lightgbm[scikit-learn]
