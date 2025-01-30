@@ -11,6 +11,9 @@ from app.const import (
     DEFAULT_PREDICTIONS_ONLY,
     RESULTS_FOLDER,
     PREDICTED_COLUMN,
+    TARGET_COLUMN,
+    COLUMNS_TO_CATEGORIZE,
+    WANDB_PROJECT
 )
 
 
@@ -48,7 +51,9 @@ def load_model(path: str):
 
 def extract_features(df: pd.DataFrame) -> np.ndarray:
     print("Extracting features...")
-    X = df[FEATURES_LIST].to_numpy()
+    X = df[FEATURES_LIST]
+    # Should be done during preprocessing
+    X[COLUMNS_TO_CATEGORIZE] = X[COLUMNS_TO_CATEGORIZE].astype(str)
     print("Features extracted.")
     return X
 
@@ -85,6 +90,14 @@ if __name__ == "__main__":
 
     predictions = make_predictions(model, X)
 
+    # Resume the run to log the predictions
+    api = wandb.Api()
+    runs = api.runs(f"Y-DATA-Ninjas/{WANDB_PROJECT}")
+    runs_list = list(runs)  # Convert to a list
+    last_run = runs_list[-1] 
+    run = wandb.init(entity="Y-DATA-Ninjas", project=WANDB_PROJECT, id=last_run.id, resume="must")
+    run.log({"predictions_array": predictions.tolist()})
+
     if args.predictions_file_name is not None:
         out_path = os.path.join(RESULTS_FOLDER, args.predictions_file_name)
     else:
@@ -94,7 +107,8 @@ if __name__ == "__main__":
 
         out_path = os.path.join(
             RESULTS_FOLDER,
-            f"predictions_{input_file_name_without_extension}_{pd.Timestamp.now()}.csv",
+            # Commented out because throws an error y.f.
+            f"predictions_{input_file_name_without_extension}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv"
         )
 
     save_predictions(

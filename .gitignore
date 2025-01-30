@@ -4,6 +4,7 @@ models/
 results/
 archived_experiments/
 wandb/
+catboost_info/
 
 
 # Created by .ignore support plugin (hsz.mobi)

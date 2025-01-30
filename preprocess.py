@@ -2,23 +2,98 @@ import os
 import wandb
 import argparse
 import pandas as pd
-from typing import Tuple
+import numpy as np
 from sklearn.model_selection import train_test_split
-
+import os
+from typing import Tuple
 from app.const import (
-    DATA_FOLDER,
     DEFAULT_CSV_RAW_TRAIN_PATH,
+    DEFAULT_RANDOM_STATE,
+    DATA_FOLDER,
     DEFAULT_REMOVE_DUPLICATES,
     DEFAULT_REMOVE_MISSING_TARGET,
     DEFAULT_TEST_TRAIN_SPLIT,
     DEFAULT_TEST_SIZE,
-    DEFAULT_RANDOM_STATE,
     DEFAULT_CSV_TRAIN_PATH,
     DEFAULT_CSV_TEST_PATH,
     TARGET_COLUMN,
     DEFAULT_CSV_INFERENCE_PATH,
     WANDB_PROJECT,
+    COLUMNS_TO_CATEGORIZE
 )
+
+
+def impute(df: pd.DataFrame) -> pd.DataFrame:
+    """ "
+    Impute datafrme. One-hot-encodes 'gender' that will be imputed for streamlined process
+    """
+    df_impute = df.copy()
+    ###User Age group determines age and gender
+    df_impute.loc[df_impute["user_group_id"] == 0, "age_level"] = 0
+    ###One-Hot Encode Gender
+    # gender column becomes 'is_male'
+    df_impute["gender"] = (
+        df_impute[df_impute["gender"].notna()]["gender"] == "Male"
+    ).astype(bool)
+    ###Impute Age and Gender From user_age_group
+    for i in range(1, 13):
+        gender = i < 7  # convert user group to gender
+        age = (i % 7) + (1 - gender)  # convert user group to age
+        df_impute.loc[(df_impute["user_group_id"] == i) & df_impute["gender"].isna(), "gender"] = gender
+        df_impute.loc[(df_impute["user_group_id"] == i) & df_impute["age_level"].isna(), "age_level"] = age
+
+    ###Impute missing values for campaign id
+    web_campaign_dict = {
+        1734.0: 82320.0,
+        6970.0: 98970.0,
+        11085.0: 105960.0,
+        13787.0: np.mean([359520.0, 360936.0]),
+        28529.0: 118601.0,
+        45962.0: 414149.0,
+        51181.0: 396664.0,
+        53587.0: 404347.0,
+        60305.0: 405490.0,
+    }
+    for web in web_campaign_dict:
+        df_impute.loc[
+            (df_impute["webpage_id"] == web) & (df_impute["campaign_id"].isna()),
+            "campaign_id",
+        ] = web_campaign_dict[web]
+
+    return df_impute
+
+
+def preprocess(df: pd.DataFrame) -> pd.DataFrame:
+    # Impute Gender and Age_level and campaign_id
+    df_imputed = impute(df)
+
+    # Extract dt features
+    df_imputed["dt"] = pd.to_datetime(df_imputed["DateTime"])
+    df_imputed["hour"] = df_imputed["dt"].dt.hour
+    df_imputed["day"] = df_imputed["dt"].dt.day
+
+    # Make sure object columns are objects
+    # product already a categorical
+    for col in COLUMNS_TO_CATEGORIZE:
+        if df_imputed[col].dtype != 'object':
+            df_imputed[col] = df_imputed[col].astype('Int64')
+        # ensure column remains a string after saved and reloaded:
+        #df_imputed[col] = df_imputed[col].apply(lambda x: x + "s")
+
+    # Binarize var_1
+    df_imputed["var_1"] = df_imputed["var_1"].astype(bool)
+
+    # After imputation, all info contained in is_male and age level and dt:
+    columns_to_drop = [
+        "user_group_id",
+        "DateTime",
+        "dt",
+        "session_id",
+        "user_id",
+        "webpage_id",
+    ]
+    df_imputed = df_imputed.drop(columns=columns_to_drop)
+    return df_imputed
 
 
 def load_data(path: str) -> pd.DataFrame:
@@ -70,6 +145,7 @@ def split_data(
 
 def preprocess_raw_inference(df: pd.DataFrame):
     print("Preprocessing raw inference data...")
+    df = preprocess(df)
     # TODO: Imputation? (based on the training set)
     # TODO: Encoding of categorical variables? (based on the training set)
     # TODO: Feature engineering? (based on the training set)
@@ -96,6 +172,8 @@ def preprocess_raw_train(
         df = drop_missing_target(df)
         save_data(df, os.path.join(DATA_FOLDER, "raw_train_no_missing_target.csv"))
 
+    df = preprocess(df)
+
     if not test_train_split:
         save_data(df, DEFAULT_CSV_TRAIN_PATH)
     else:
@@ -121,6 +199,7 @@ if __name__ == "__main__":
     print("preprocess.py started...")
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("-rs", "--random-state", default=DEFAULT_RANDOM_STATE, type=int)
 
     parser.add_argument("-crp", "--csv-raw-path", default=DEFAULT_CSV_RAW_TRAIN_PATH)
 
@@ -133,11 +212,11 @@ if __name__ == "__main__":
 
     parser.add_argument("-tts", "--test-train-split", default=DEFAULT_TEST_TRAIN_SPLIT)
     parser.add_argument("-ts", "--test-size", default=DEFAULT_TEST_SIZE)
-    parser.add_argument("-rs", "--random-state", default=DEFAULT_RANDOM_STATE)
 
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
 
     args = parser.parse_args()
+    df = pd.read_csv(args.csv_raw_path)
 
     # wandb.init(project=WANDB_PROJECT, group=args.wandb_group_id, job_type="preprocess")
 

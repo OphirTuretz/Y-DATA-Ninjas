@@ -1,9 +1,12 @@
 import os
+import numpy as np
 
 DATA_FOLDER = "data"
 MODELS_FOLDER = "models"
 RESULTS_FOLDER = "results"
 ARCHIVE_FOLDER = "archived_experiments"
+
+UKNOWN_EXPERIMENT_NAME = "unknown_experiment"
 
 CSV_RAW_TRAIN_FILENAME = "train_dataset_full.csv"
 DEFAULT_CSV_RAW_TRAIN_PATH = os.path.join(DATA_FOLDER, CSV_RAW_TRAIN_FILENAME)
@@ -36,19 +39,29 @@ DEFAULT_CSV_PREDICTIONS_INFERENCE_PATH = os.path.join(
 
 DEFAULT_REMOVE_DUPLICATES = True
 DEFAULT_REMOVE_MISSING_TARGET = True
-
+DEFAULT_MAKE_INFERENCE = False
 DEFAULT_TEST_TRAIN_SPLIT = True
 DEFAULT_TEST_SIZE = 0.2
 DEFAULT_RANDOM_STATE = 42
 
 FEATURES_LIST = [
+    "product",
+    "campaign_id",
     "product_category_1",
     "product_category_2",
-    "user_depth",
+    "gender",
     "age_level",
+    "user_depth",
     "city_development_index",
     "var_1",
-    "gender",
+    "hour",
+    "day",
+]
+COLUMNS_TO_CATEGORIZE = [
+    "product",
+    "campaign_id",
+    "product_category_1",
+    "product_category_2",
 ]
 TARGET_COLUMN = "is_click"
 PREDICTED_COLUMN = TARGET_COLUMN + "_predicted"
@@ -57,4 +70,19 @@ DEFAULT_PREDICTIONS_ONLY = False
 
 DATE_TIME_PATTERN = "%Y-%m-%d_%H-%M-%S"
 
-WANDB_PROJECT = "Dummy-runs"
+WANDB_PROJECT = "pre-main"
+
+# https://catboost.ai/docs/en/references/custom-metric__supported-metrics
+# https://catboost.ai/docs/en/references/training-parameters/common
+MODEL_GS_PARAM_GRID = {
+    "num_leaves": [31],
+    "iterations": [1000],
+    "learning_rate": np.logspace(np.log10(0.0001), np.log10(0.5), 5),
+    "eval_metric": ["F1"],
+    "depth": [6, 10, 16], #np.arange(4, 11, 2),
+    "l2_leaf_reg": np.linspace(0, 5, 3),
+    "nan_mode": ["Min"],
+    "early_stopping_rounds": [10],
+    "loss_function": ["Logloss"],
+    "class_weights": ["Balanced"],  # ["Default", "Balanced"],
+}
