@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from typing import Tuple
 from sklearn.dummy import DummyClassifier
-from catboost import CatBoostClassifier 
+from catboost import CatBoostClassifier
 from app.const import (
     DEFAULT_CSV_TRAIN_PATH,
     FEATURES_LIST,
@@ -14,7 +14,7 @@ from app.const import (
     MODELS_FOLDER,
     DEFAULT_MODEL_PATH,
     WANDB_PROJECT,
-    COLUMNS_TO_CATEGORIZE
+    COLUMNS_TO_CATEGORIZE,
 )
 
 
@@ -63,50 +63,91 @@ if __name__ == "__main__":
 
     # Argument parser
     parser = argparse.ArgumentParser()
-    parser.add_argument("-ctp", "--csv-train-path", default=DEFAULT_CSV_TRAIN_PATH, type=str)
+    parser.add_argument(
+        "-ctp", "--csv-train-path", default=DEFAULT_CSV_TRAIN_PATH, type=str
+    )
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
-    parser.add_argument("-m", "--model", default="CatBoostClassifier", help="Model to use")
-    parser.add_argument("-mn", "--model-name", default="CatBoost", help="Custom model name")
+    parser.add_argument(
+        "-m", "--model", default="CatBoostClassifier", help="Model to use"
+    )
+    parser.add_argument(
+        "-mn", "--model-name", default="CatBoost", help="Custom model name"
+    )
 
-    # Hyperparameters 
-    parser.add_argument("-nl", "--num-leaves", default=None, type=int, help="Number of leaves in the tree")
-    parser.add_argument("-lr", "--learning-rate", default=0.2, type=float, help="Learning rate")
+    # Hyperparameters
+    parser.add_argument(
+        "-nl",
+        "--num-leaves",
+        default=None,
+        type=int,
+        help="Number of leaves in the tree",
+    )
+    parser.add_argument(
+        "-i", "--iterations", default=100, type=int, help="Number of iterations"
+    )
+    parser.add_argument(
+        "-lr", "--learning-rate", default=0.2, type=float, help="Learning rate"
+    )
     parser.add_argument("-em", "--eval-metric", default="F1", help="Evaluation metric")
     parser.add_argument("-d", "--depth", default=6, type=int, help="Depth of the tree")
-    parser.add_argument("-l2", "--l2-leaf-reg", default=1, type=float, help="L2 regularization")
-    parser.add_argument("-nm", "--NaN-mode", default="Min", help="NaN handling mode")
-    parser.add_argument("-i", "--iterations", default=100, type=int, help="Number of iterations")
-    parser.add_argument("-esr", "--early-stopping-rounds", default=10, type=int, help="Early stopping rounds")
-    parser.add_argument("-cw", "--class-weights", default=[1, 93 / 7], help="Class weights")
+    parser.add_argument(
+        "-l2", "--l2-leaf-reg", default=1, type=float, help="L2 regularization"
+    )
+    parser.add_argument("-nm", "--nan-mode", default="Min", help="NaN handling mode")
+    parser.add_argument(
+        "-esr",
+        "--early-stopping-rounds",
+        default=10,
+        type=int,
+        help="Early stopping rounds",
+    )
+    parser.add_argument(
+        "-l", "--loss-function", default="Logloss", help="Loss function"
+    )
+    parser.add_argument("-cw", "--class-weights", default=None, help="Class weights")
 
     args = parser.parse_args()
 
+    # Load and prepare data
+    train_df = load_data(args.csv_train_path)
+    X_train, y_train = prepare_data(train_df)
+
+    # Check if class weights are provided
+    if args.class_weights is not None:
+        if args.class_weights != "Balanced":
+            args.class_weights = None
+        else:
+            # Compute class weights
+            pos_ratio = y_train.sum() / len(y_train)
+            neg_ratio = 1 - pos_ratio
+            args.class_weights = [1, neg_ratio / pos_ratio]
 
     ModelClass = CatBoostClassifier
 
     hyperparams = {
-        "class_weights": args.class_weights,
         "num_leaves": args.num_leaves,
+        "iterations": args.iterations,
         "learning_rate": args.learning_rate,
         "eval_metric": args.eval_metric,
         "depth": args.depth,
         "l2_leaf_reg": args.l2_leaf_reg,
-        "nan_mode": args.NaN_mode,
-        "iterations": args.iterations,
-        "early_stopping_rounds": args.early_stopping_rounds
+        "nan_mode": args.nan_mode,
+        "early_stopping_rounds": args.early_stopping_rounds,
+        "loss_function": args.loss_function,
+        "class_weights": args.class_weights,
     }
 
     model = ModelClass(**hyperparams)
 
     # Initialize W&B
-    run = wandb.init(project=WANDB_PROJECT, group=args.wandb_group_id, job_type="train_predict", config=None)
+    run = wandb.init(
+        project=WANDB_PROJECT,
+        group=args.wandb_group_id,
+        job_type="train_predict",
+        config=None,
+    )
     run.log({"model": args.model_name})
     run.log(hyperparams)
-
-    # Load and prepare data
-    train_df = load_data(args.csv_train_path)
-
-    X_train, y_train = prepare_data(train_df)
 
     # Train model
     model = fit_model(model, X_train, y_train, COLUMNS_TO_CATEGORIZE)

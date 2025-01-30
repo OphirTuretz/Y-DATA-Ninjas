@@ -1,3 +1,4 @@
+import itertools
 from invoke import task
 from datetime import datetime
 import os
@@ -18,6 +19,7 @@ from app.const import (
     UKNOWN_EXPERIMENT_NAME,
     CSV_RAW_TRAIN_FILENAME,
     CSV_RAW_INFERENCE_FILENAME,
+    MODEL_GS_PARAM_GRID,
 )
 
 
@@ -29,6 +31,8 @@ def prepare_data_for_pipeline():
 @task
 def pipeline(c):
 
+    print("Running pipeline...")
+
     # Loading .env environment variables
     load_dotenv()
 
@@ -37,54 +41,86 @@ def pipeline(c):
 
     # prepare_data_for_pipeline()
 
-    # Create a group id that will be shared within the same run
-    wandb_group_id = "experiment-" + wandb.util.generate_id()
+    # Get all experiment's hyperparameters (the parameters and their corresponding value lists)
+    keys = MODEL_GS_PARAM_GRID.keys()
+    values = MODEL_GS_PARAM_GRID.values()
 
-    print(f"Running experiment {wandb_group_id}...")
+    # Generate all combinations
+    combinations = itertools.product(*values)
 
-    # preprocess raw train data
-    c.run(f"python preprocess.py --wandb-group-id {wandb_group_id}")
+    print("Running experiments...")
 
-    # train
-    c.run(f"python train.py --wandb-group-id {wandb_group_id}")
+    # Iterate over combinations and create a list/tuple of keys and current values
+    for idx, combination in enumerate(combinations):
 
-    # predict on train
-    c.run(
-        f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_TRAIN_PATH} --predictions-file-name {CSV_PREDICTIONS_TRAIN_FILENAME}"
-    )
+        # Create a group id that will be shared within the same run
+        wandb_group_id = "experiment-" + wandb.util.generate_id()
 
-    # process train results
-    c.run(
-        f"python results.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_PREDICTIONS_TRAIN_PATH}"
-    )
+        print(f"Running experiment {idx}: {wandb_group_id}...")
 
-    # predict on test
-    c.run(
-        f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_TEST_PATH} --predictions-file-name {CSV_PREDICTIONS_TEST_FILENAME}"
-    )
+        # Get the current combination of parameters
+        param_combination = dict(zip(keys, combination))
+        print(f"Experiment parameters: {param_combination}")
 
-    # process test results
-    c.run(
-        f"python results.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_PREDICTIONS_TEST_PATH}"
-    )
+        # Create a formatted string with the parameters
+        formatted_str = " ".join(
+            [
+                f"--{key.replace('_', '-')} {value}"
+                for key, value in param_combination.items()
+            ]
+        )
 
-    # preprocess inference data
-    c.run(
-        f"python preprocess.py --wandb-group-id {wandb_group_id} --inference-run True --csv-raw-path {DEFAULT_CSV_RAW_INFERENCE_PATH}"
-    )
+        # If this is the first experiment, preprocess the raw data
+        if idx == 0:
+            # preprocess raw train data
+            c.run(f"python preprocess.py --wandb-group-id {wandb_group_id}")
 
-    # predict on inference
-    c.run(
-        f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_INFERENCE_PATH} --predictions-only True --predictions-file-name {CSV_PREDICTIONS_INFERENCE_FILENAME}"
-    )
+        # train
+        c.run(f"python train.py --wandb-group-id {wandb_group_id} {formatted_str}")
 
-    print("Experiment finished.")
+        # # predict on train
+        # c.run(
+        #     f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_TRAIN_PATH} --predictions-file-name {CSV_PREDICTIONS_TRAIN_FILENAME}"
+        # )
 
-    c.run(f"inv archive-experiment --name {wandb_group_id}")
+        # # process train results
+        # c.run(
+        #     f"python results.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_PREDICTIONS_TRAIN_PATH}"
+        # )
+
+        # predict on test
+        c.run(
+            f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_TEST_PATH} --predictions-file-name {CSV_PREDICTIONS_TEST_FILENAME}"
+        )
+
+        # process test results
+        c.run(
+            f"python results.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_PREDICTIONS_TEST_PATH}"
+        )
+
+        # preprocess inference data
+        c.run(
+            f"python preprocess.py --wandb-group-id {wandb_group_id} --inference-run True --csv-raw-path {DEFAULT_CSV_RAW_INFERENCE_PATH}"
+        )
+
+        # predict on inference
+        c.run(
+            f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_INFERENCE_PATH} --predictions-only True --predictions-file-name {CSV_PREDICTIONS_INFERENCE_FILENAME}"
+        )
+
+        print("Experiment finished.")
+
+        c.run(f"inv archive-experiment --name {wandb_group_id} --leave-data True")
+
+    print("All experiments finished.")
+
+    print("Pipeline finished.")
 
 
-@task(optional=["name", "base_folder"])
-def archive_experiment(c, name=UKNOWN_EXPERIMENT_NAME, base_folder=ARCHIVE_FOLDER):
+@task(optional=["name", "base_folder", "leave_data"])
+def archive_experiment(
+    c, name=UKNOWN_EXPERIMENT_NAME, base_folder=ARCHIVE_FOLDER, leave_data=False
+):
 
     name = f"{datetime.now().strftime(DATE_TIME_PATTERN)}_{name}"
 
@@ -102,8 +138,12 @@ def archive_experiment(c, name=UKNOWN_EXPERIMENT_NAME, base_folder=ARCHIVE_FOLDE
     if os.path.exists("data"):
         c.run(f"mv data {exp_path}")
         c.run("mkdir data")
-        c.run(f"cp {exp_path}/data/{CSV_RAW_TRAIN_FILENAME} data/")
-        c.run(f"cp {exp_path}/data/{CSV_RAW_INFERENCE_FILENAME} data/")
+
+        if leave_data:
+            c.run(f"cp {exp_path}/data/* data/")
+        else:
+            c.run(f"cp {exp_path}/data/{CSV_RAW_TRAIN_FILENAME} data/")
+            c.run(f"cp {exp_path}/data/{CSV_RAW_INFERENCE_FILENAME} data/")
 
     # check if results folder exists
     if os.path.exists("results"):

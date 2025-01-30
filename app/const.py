@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 DATA_FOLDER = "data"
 MODELS_FOLDER = "models"
@@ -56,7 +57,12 @@ FEATURES_LIST = [
     "hour",
     "day",
 ]
-COLUMNS_TO_CATEGORIZE = ["product", "campaign_id", "product_category_1", "product_category_2"]
+COLUMNS_TO_CATEGORIZE = [
+    "product",
+    "campaign_id",
+    "product_category_1",
+    "product_category_2",
+]
 TARGET_COLUMN = "is_click"
 PREDICTED_COLUMN = TARGET_COLUMN + "_predicted"
 
@@ -66,15 +72,17 @@ DATE_TIME_PATTERN = "%Y-%m-%d_%H-%M-%S"
 
 WANDB_PROJECT = "pre-main"
 
+# https://catboost.ai/docs/en/references/custom-metric__supported-metrics
+# https://catboost.ai/docs/en/references/training-parameters/common
 MODEL_GS_PARAM_GRID = {
-    "eval_metric": [
-        "F1"
-    ],  # https://catboost.ai/docs/en/references/custom-metric__supported-metrics
+    "num_leaves": [31],
     "iterations": [1000],
-    "learning_rate": [0.1],
-    "depth": [6],
-    "l2_leaf_reg": [3],
-    "border_count": [32],
-    "thread_count": [4],
-    "random_seed": [42],
+    "learning_rate": [0.01],  # np.logspace(np.log10(0.001), np.log10(0.5), 20),
+    "eval_metric": ["F1"],
+    "depth": [6],  # np.arange(1, 15),
+    "l2_leaf_reg": [3],  # np.linspace(0, 5, 21),
+    "nan_mode": ["Min", "Max"],
+    "early_stopping_rounds": [10],
+    "loss_function": ["Logloss"],
+    "class_weights": ["Balanced"],  # ["Default", "Balanced"],
 }
