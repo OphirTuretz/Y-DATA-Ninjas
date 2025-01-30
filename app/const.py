@@ -52,6 +52,7 @@ FEATURES_LIST = [
     "var_1",
     "gender",
 ]
+COLUMNS_TO_CATEGORIZE = []
 TARGET_COLUMN = "is_click"
 PREDICTED_COLUMN = TARGET_COLUMN + "_predicted"
 
