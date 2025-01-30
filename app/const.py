@@ -44,13 +44,17 @@ DEFAULT_TEST_SIZE = 0.2
 DEFAULT_RANDOM_STATE = 42
 
 FEATURES_LIST = [
+    "product",
+    "campaign_id",
     "product_category_1",
     "product_category_2",
-    "user_depth",
+    "gender",
     "age_level",
+    "user_depth",
     "city_development_index",
     "var_1",
-    "gender",
+    "hour",
+    "day",
 ]
 COLUMNS_TO_CATEGORIZE = ["product", "campaign_id", "product_category_1", "product_category_2"]
 TARGET_COLUMN = "is_click"
