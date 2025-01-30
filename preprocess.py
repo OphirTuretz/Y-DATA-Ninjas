@@ -19,6 +19,7 @@ from app.const import (
     TARGET_COLUMN,
     DEFAULT_CSV_INFERENCE_PATH,
     WANDB_PROJECT,
+    COLUMNS_TO_CATEGORIZE
 )
 
 
@@ -73,9 +74,9 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
     # Make sure object columns are objects
     # product already a categorical
-    columns_to_categorize = ["campaign_id", "product_category_1", "product_category_2"]
-    for col in columns_to_categorize:
-        df_imputed[col] = df_imputed[col].astype('Int64')
+    for col in COLUMNS_TO_CATEGORIZE:
+        if df_imputed[col].dtype != 'object':
+            df_imputed[col] = df_imputed[col].astype('Int64')
         # ensure column remains a string after saved and reloaded:
         #df_imputed[col] = df_imputed[col].apply(lambda x: x + "s")
 
