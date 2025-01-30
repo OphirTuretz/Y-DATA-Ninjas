@@ -31,10 +31,16 @@ def pipeline(c):
 
     # Loading .env environment variables
     load_dotenv()
+
+    # Archive the last experiment
+    c.run("inv archive-experiment")
+
     # prepare_data_for_pipeline()
 
     # Create a group id that will be shared within the same run
     wandb_group_id = "experiment-" + wandb.util.generate_id()
+
+    print(f"Running experiment {wandb_group_id}...")
 
     # preprocess raw train data
     c.run(f"python preprocess.py --wandb-group-id {wandb_group_id}")
@@ -71,6 +77,10 @@ def pipeline(c):
     c.run(
         f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_INFERENCE_PATH} --predictions-only True --predictions-file-name {CSV_PREDICTIONS_INFERENCE_FILENAME}"
     )
+
+    print("Experiment finished.")
+
+    c.run(f"inv archive-experiment --name {wandb_group_id}")
 
 
 @task(optional=["name", "base_folder"])
