@@ -29,7 +29,7 @@ def impute(df: pd.DataFrame) -> pd.DataFrame:
     """
     df_impute = df.copy()
     ###User Age group determines age and gender
-    df_impute[df_impute["user_group_id"] == 0]["age_level"] = 0
+    df_impute.loc[df_impute["user_group_id"] == 0, "age_level"] = 0
     ###One-Hot Encode Gender
     # gender column becomes 'is_male'
     df_impute["gender"] = (
@@ -39,10 +39,9 @@ def impute(df: pd.DataFrame) -> pd.DataFrame:
     for i in range(1, 13):
         gender = i < 7  # convert user group to gender
         age = (i % 7) + (1 - gender)  # convert user group to age
-        df_impute.loc[df_impute["user_group_id"] == i, ["age_level", "gender"]] = [
-            age,
-            gender,
-        ]
+        df_impute.loc[(df_impute["user_group_id"] == i) & df_impute["gender"].isna(), "gender"] = gender
+        df_impute.loc[(df_impute["user_group_id"] == i) & df_impute["age_level"].isna(), "age_level"] = age
+
     ###Impute missing values for campaign id
     web_campaign_dict = {
         1734.0: 82320.0,
@@ -77,9 +76,9 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     # product already a categorical
     columns_to_categorize = ["campaign_id", "product_category_1", "product_category_2"]
     for col in columns_to_categorize:
-        df_imputed[col] = df_imputed[col].astype(str)
+        df_imputed[col] = df_imputed[col].astype('Int64')
         # ensure column remains a string after saved and reloaded:
-        df_imputed[col] = df_imputed[col].apply(lambda x: x + "s")
+        #df_imputed[col] = df_imputed[col].apply(lambda x: x + "s")
 
     # Binarize var_1
     df_imputed["var_1"] = df_imputed["var_1"].astype(bool)
