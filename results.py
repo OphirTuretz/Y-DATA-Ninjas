@@ -1,9 +1,14 @@
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score, f1_score, precision_score, recall_score
 import pandas as pd
 import argparse
 import wandb
-from app.const import WANDB_PROJECT, TARGET_COLUMN, PREDICTED_COLUMN
+from app.const import WANDB_PROJECT, TARGET_COLUMN, PREDICTED_COLUMN, DEFAULT_CSV_PREDICTIONS_TRAIN_PATH
+import logging
 
+#logging.basicConfig(
+#    level=logging.INFO,
+#    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
+#)
 
 def plot_pr_curve(y_true, y_pred):
     print("Plotting PR curve...")
@@ -53,19 +58,24 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-i", "--input-data-path", required=True)
+    parser.add_argument("-i", "--input-data-path", default=DEFAULT_CSV_PREDICTIONS_TRAIN_PATH)
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
 
     args = parser.parse_args()
 
-    wandb.init(project=WANDB_PROJECT, group=args.wandb_group_id, job_type="results")
-
+    # Resume the run
+    api = wandb.Api()
+    runs = api.runs(f"Y-DATA-Ninjas/{WANDB_PROJECT}")
+    runs_list = list(runs)  # Convert to a list
+    last_run = runs_list[-1] 
+    run = wandb.init(entity="Y-DATA-Ninjas", project=WANDB_PROJECT, id=last_run.id, resume="must")
+    
     df = load_data(args.input_data_path)
     y_true, y_pred = extract_correct_and_predicted_targets(df)
 
-    plot_classification_report(y_true, y_pred)
+    #plot_classification_report(y_true, y_pred)
 
-    plot_confusion_matrix(y_true, y_pred)
+    #plot_confusion_matrix(y_true, y_pred)
 
     # plot_pr_curve(y_true, y_pred)
 
@@ -76,6 +86,28 @@ if __name__ == "__main__":
     # rgb_im.save('my_image.jpg')
     # wandb.log({"example_image": wandb.Image('my_image.jpg')})
 
-    wandb.finish()
+    #logging.info("Evaluating model on test set...")
+    #report = classification_report(y_true, y_pred, output_dict=True)
+    f1=f1_score(y_true, y_pred)
+    precision=precision_score(y_true, y_pred)
+    recall=recall_score(y_true, y_pred)
+    accuracy = accuracy_score(y_true, y_pred)
 
+    run.log({
+        "f1": f1,
+        "precision": precision,
+        "recall": recall,
+        "accuracy": accuracy
+    })
+
+
+    #logging.info(f"Accuracy: {accuracy:.4f}")
+    #logging.info(f"f1: {f1:.4f}")
+    #logging.info(f"precision: {precision:.4f}")
+    #logging.info(f"recall: {recall:.4f}")
+    # logging.info("Classification Report:")
+    # logging.info(classification_report(y_true, y_pred))
+
+    
+    run.finish()
     print("results.py finished.")
