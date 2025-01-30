@@ -1,5 +1,5 @@
 from invoke import task
-import datetime
+from datetime import datetime
 import os
 import wandb
 from dotenv import load_dotenv
@@ -15,6 +15,9 @@ from app.const import (
     DEFAULT_CSV_PREDICTIONS_TRAIN_PATH,
     DEFAULT_CSV_PREDICTIONS_TEST_PATH,
     CSV_PREDICTIONS_INFERENCE_FILENAME,
+    UKNOWN_EXPERIMENT_NAME,
+    CSV_RAW_TRAIN_FILENAME,
+    CSV_RAW_INFERENCE_FILENAME,
 )
 
 
@@ -29,7 +32,7 @@ def pipeline(c):
     # Loading .env environment variables
     load_dotenv()
     # prepare_data_for_pipeline()
-    
+
     # Create a group id that will be shared within the same run
     wandb_group_id = "experiment-" + wandb.util.generate_id()
 
@@ -70,13 +73,18 @@ def pipeline(c):
     )
 
 
-@task
-def archive_experiment(c, name, base_folder=ARCHIVE_FOLDER):
+@task(optional=["name", "base_folder"])
+def archive_experiment(c, name=UKNOWN_EXPERIMENT_NAME, base_folder=ARCHIVE_FOLDER):
+
     name = f"{datetime.now().strftime(DATE_TIME_PATTERN)}_{name}"
-    print(f"archived experiment: {name}")
+
+    print(f"archiving experiment {name}...")
+
+    # check if base folder exists (archive folder)
     if not os.path.exists(base_folder):
         os.makedirs(base_folder)
 
+    # create experiment folder
     exp_path = f"{base_folder}/{name}"
     c.run(f"mkdir {exp_path}")
 
@@ -84,11 +92,17 @@ def archive_experiment(c, name, base_folder=ARCHIVE_FOLDER):
     if os.path.exists("data"):
         c.run(f"mv data {exp_path}")
         c.run("mkdir data")
+        c.run(f"cp {exp_path}/data/{CSV_RAW_TRAIN_FILENAME} data/")
+        c.run(f"cp {exp_path}/data/{CSV_RAW_INFERENCE_FILENAME} data/")
+
     # check if results folder exists
     if os.path.exists("results"):
         c.run(f"mv results {exp_path}")
         c.run("mkdir results")
+
     # check if models folder exists
     if os.path.exists("models"):
         c.run(f"mv models {exp_path}")
         c.run("mkdir models")
+
+    print("experiment archived.")

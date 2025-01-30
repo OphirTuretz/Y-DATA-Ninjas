@@ -5,6 +5,8 @@ MODELS_FOLDER = "models"
 RESULTS_FOLDER = "results"
 ARCHIVE_FOLDER = "archived_experiments"
 
+UKNOWN_EXPERIMENT_NAME = "unknown_experiment"
+
 CSV_RAW_TRAIN_FILENAME = "train_dataset_full.csv"
 DEFAULT_CSV_RAW_TRAIN_PATH = os.path.join(DATA_FOLDER, CSV_RAW_TRAIN_FILENAME)
 
@@ -58,3 +60,16 @@ DEFAULT_PREDICTIONS_ONLY = False
 DATE_TIME_PATTERN = "%Y-%m-%d_%H-%M-%S"
 
 WANDB_PROJECT = "pre-main"
+
+MODEL_GS_PARAM_GRID = {
+    "eval_metric": [
+        "F1"
+    ],  # https://catboost.ai/docs/en/references/custom-metric__supported-metrics
+    "iterations": [1000],
+    "learning_rate": [0.1],
+    "depth": [6],
+    "l2_leaf_reg": [3],
+    "border_count": [32],
+    "thread_count": [4],
+    "random_seed": [42],
+}
