@@ -9,7 +9,6 @@ from typing import Tuple
 from app.const import (
     DEFAULT_CSV_RAW_TRAIN_PATH,
     DEFAULT_RANDOM_STATE,
-    DEFAULT_MAKE_INFERENCE,
     DATA_FOLDER,
     DEFAULT_REMOVE_DUPLICATES,
     DEFAULT_REMOVE_MISSING_TARGET,
@@ -200,9 +199,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-rs", "--random-state", default=DEFAULT_RANDOM_STATE, type=int)
-    parser.add_argument(
-        "-mi", "--make_inference", default=DEFAULT_MAKE_INFERENCE, type=bool
-    )
 
     parser.add_argument("-crp", "--csv-raw-path", default=DEFAULT_CSV_RAW_TRAIN_PATH)
 
@@ -220,7 +216,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     df = pd.read_csv(args.csv_raw_path)
-    # preprocess(df, args.random_state, args.make_inference)
 
     # wandb.init(project=WANDB_PROJECT, group=args.wandb_group_id, job_type="preprocess")
 
