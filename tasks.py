@@ -3,6 +3,7 @@ from invoke import task
 from datetime import datetime
 import os
 import wandb
+import shutil
 from dotenv import load_dotenv
 from app.const import (
     ARCHIVE_FOLDER,
@@ -127,32 +128,48 @@ def archive_experiment(
     print(f"archiving experiment {name}...")
 
     # check if base folder exists (archive folder)
-    if not os.path.exists(base_folder):
-        os.makedirs(base_folder)
+    # if not os.path.exists(base_folder):
+    #     os.makedirs(base_folder)
+    # Ensure base folder exists
+    os.makedirs(base_folder, exist_ok=True)
 
-    # create experiment folder
-    exp_path = f"{base_folder}/{name}"
-    c.run(f"mkdir {exp_path}")
+    # Create experiment folder
+    # exp_path = f"{base_folder}/{name}"
+    # c.run(f"mkdir {exp_path}")
+    exp_path = os.path.join(base_folder, name)
+    os.makedirs(exp_path, exist_ok=True)
 
-    # check if data folder exists
+    # Initialize "data" folder
     if os.path.exists("data"):
-        c.run(f"mv data {exp_path}")
-        c.run("mkdir data")
+        # c.run(f"mv data {exp_path}")
+        # c.run("mkdir data")
+        shutil.move("data", exp_path)
+        os.makedirs("data", exist_ok=True)
 
         if leave_data:
-            c.run(f"cp {exp_path}/data/* data/")
+            # c.run(f"cp {exp_path}/data/* data/")
+            for file in os.listdir(os.path.join(exp_path, "data")):
+                shutil.copy(os.path.join(exp_path, "data", file), "data")
         else:
-            c.run(f"cp {exp_path}/data/{CSV_RAW_TRAIN_FILENAME} data/")
-            c.run(f"cp {exp_path}/data/{CSV_RAW_INFERENCE_FILENAME} data/")
+            # c.run(f"cp {exp_path}/data/{CSV_RAW_TRAIN_FILENAME} data/")
+            # c.run(f"cp {exp_path}/data/{CSV_RAW_INFERENCE_FILENAME} data/")
+            for file in [CSV_RAW_TRAIN_FILENAME, CSV_RAW_INFERENCE_FILENAME]:
+                src_file = os.path.join(exp_path, "data", file)
+                if os.path.exists(src_file):
+                    shutil.copy(src_file, "data")
 
-    # check if results folder exists
+    # Initialize results folder
     if os.path.exists("results"):
-        c.run(f"mv results {exp_path}")
-        c.run("mkdir results")
+        # c.run(f"mv results {exp_path}")
+        # c.run("mkdir results")
+        shutil.move("results", exp_path)
+        os.makedirs("results", exist_ok=True)
 
-    # check if models folder exists
+    # Initialize models folder
     if os.path.exists("models"):
-        c.run(f"mv models {exp_path}")
-        c.run("mkdir models")
+        # c.run(f"mv models {exp_path}")
+        # c.run("mkdir models")
+        shutil.move("models", exp_path)
+        os.makedirs("models", exist_ok=True)
 
     print("experiment archived.")
