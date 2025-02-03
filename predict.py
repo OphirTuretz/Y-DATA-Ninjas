@@ -53,7 +53,8 @@ def extract_features(df: pd.DataFrame) -> np.ndarray:
     print("Extracting features...")
     X = df[FEATURES_LIST]
     # Should be done during preprocessing
-    X[COLUMNS_TO_CATEGORIZE] = X[COLUMNS_TO_CATEGORIZE].astype(str)
+    X[COLUMNS_TO_CATEGORIZE[1:]] = X[COLUMNS_TO_CATEGORIZE[1:]].astype(float).astype(str)
+    X[COLUMNS_TO_CATEGORIZE[0]] = X[COLUMNS_TO_CATEGORIZE[0]].astype(str)
     print("Features extracted.")
     return X
 

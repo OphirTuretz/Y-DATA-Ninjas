@@ -41,7 +41,8 @@ def prepare_data(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
     print("Preparing data...")
     print("Extracting features...")
     X = df[FEATURES_LIST]
-    X[COLUMNS_TO_CATEGORIZE] = X[COLUMNS_TO_CATEGORIZE].astype(str)
+    X[COLUMNS_TO_CATEGORIZE[1:]] = X[COLUMNS_TO_CATEGORIZE[1:]].astype(float).astype(str)
+    X[COLUMNS_TO_CATEGORIZE[0]] = X[COLUMNS_TO_CATEGORIZE[0]].astype(str)
     print("Features extracted.")
     print("Extracting target...")
     y = df[TARGET_COLUMN]
