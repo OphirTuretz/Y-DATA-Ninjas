@@ -57,11 +57,26 @@ FEATURES_LIST = [
     "hour",
     "day",
 ]
-COLUMNS_TO_CATEGORIZE = [
+FEATURES_TYPE_MAP = {
+    "product": "str",
+    "campaign_id": "float64",
+    "product_category_1": "float64",
+    "product_category_2": "float64",
+    "gender": "float64",
+    "age_level": "float64",
+    "user_depth": "float64",
+    "city_development_index": "float64",
+    "var_1": "float64",
+    "hour": "float64",
+    "day": "float64",
+}
+CATEGORICAL_FEATURES_CATBOOST = [
     "product",
     "campaign_id",
     "product_category_1",
     "product_category_2",
+    # "gender",
+    # "var_1",
 ]
 TARGET_COLUMN = "is_click"
 PREDICTED_COLUMN = TARGET_COLUMN + "_predicted"
@@ -76,11 +91,11 @@ WANDB_PROJECT = "pre-main"
 # https://catboost.ai/docs/en/references/training-parameters/common
 MODEL_GS_PARAM_GRID = {
     "num_leaves": [31],
-    "iterations": [1000],
+    "iterations": [500],
     "learning_rate": [0.01],
-    "eval_metric": ["PRAUC"],
-    "depth": [6, 10, 16], #np.arange(4, 11, 2),
-    "l2_leaf_reg": np.linspace(0, 5, 3),
+    "eval_metric": ["F1"],
+    "depth": [11],  # np.arange(4, 11, 2),
+    "l2_leaf_reg": [3],
     "nan_mode": ["Min"],
     "early_stopping_rounds": [10],
     "loss_function": ["Logloss"],

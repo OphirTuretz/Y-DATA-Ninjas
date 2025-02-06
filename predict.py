@@ -12,8 +12,9 @@ from app.const import (
     RESULTS_FOLDER,
     PREDICTED_COLUMN,
     TARGET_COLUMN,
-    COLUMNS_TO_CATEGORIZE,
-    WANDB_PROJECT
+    WANDB_PROJECT,
+    FEATURES_TYPE_MAP,
+    CATEGORICAL_FEATURES_CATBOOST,
 )
 
 
@@ -57,14 +58,15 @@ def extract_features(df: pd.DataFrame) -> np.ndarray:
     print("Extracting features...")
     X = df[FEATURES_LIST]
     # Should be done during preprocessing
-    X[COLUMNS_TO_CATEGORIZE] = X[COLUMNS_TO_CATEGORIZE].astype(str)
+    # cat_features must be integer or string, real number values and NaN values should be converted to string.
+    X[CATEGORICAL_FEATURES_CATBOOST] = X[CATEGORICAL_FEATURES_CATBOOST].astype(str)
     print("Features extracted.")
     return X
 
 
 def load_data(path: str) -> pd.DataFrame:
     print(f"Loading data from {path}...")
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, dtype=FEATURES_TYPE_MAP)
     print(df.info())
     print("Data loaded.")
     return df
@@ -99,8 +101,10 @@ if __name__ == "__main__":
     api = wandb.Api()
     runs = api.runs(f"Y-DATA-Ninjas/{WANDB_PROJECT}")
     runs_list = list(runs)  # Convert to a list
-    last_run = runs_list[-1] 
-    run = wandb.init(entity="Y-DATA-Ninjas", project=WANDB_PROJECT, id=last_run.id, resume="must")
+    last_run = runs_list[-1]
+    run = wandb.init(
+        entity="Y-DATA-Ninjas", project=WANDB_PROJECT, id=last_run.id, resume="must"
+    )
     run.log({"predictions_array": predictions.tolist()})
 
     if args.predictions_file_name is not None:
@@ -113,7 +117,7 @@ if __name__ == "__main__":
         out_path = os.path.join(
             RESULTS_FOLDER,
             # Commented out because throws an error y.f.
-            f"predictions_{input_file_name_without_extension}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            f"predictions_{input_file_name_without_extension}_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
         )
 
     save_predictions(
