@@ -19,7 +19,6 @@ from app.const import (
     TARGET_COLUMN,
     DEFAULT_CSV_INFERENCE_PATH,
     WANDB_PROJECT,
-    COLUMNS_TO_CATEGORIZE
 )
 
 
@@ -39,8 +38,13 @@ def impute(df: pd.DataFrame) -> pd.DataFrame:
     for i in range(1, 13):
         gender = i < 7  # convert user group to gender
         age = (i % 7) + (1 - gender)  # convert user group to age
-        df_impute.loc[(df_impute["user_group_id"] == i) & df_impute["gender"].isna(), "gender"] = gender
-        df_impute.loc[(df_impute["user_group_id"] == i) & df_impute["age_level"].isna(), "age_level"] = age
+        df_impute.loc[
+            (df_impute["user_group_id"] == i) & df_impute["gender"].isna(), "gender"
+        ] = gender
+        df_impute.loc[
+            (df_impute["user_group_id"] == i) & df_impute["age_level"].isna(),
+            "age_level",
+        ] = age
 
     ###Impute missing values for campaign id
     web_campaign_dict = {
@@ -72,13 +76,8 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     df_imputed["hour"] = df_imputed["dt"].dt.hour
     df_imputed["day"] = df_imputed["dt"].dt.day
 
-    # Make sure object columns are objects
-    # product already a categorical
-    for col in COLUMNS_TO_CATEGORIZE:
-        if df_imputed[col].dtype != 'object':
-            df_imputed[col] = df_imputed[col].astype('Int64')
-        # ensure column remains a string after saved and reloaded:
-        #df_imputed[col] = df_imputed[col].apply(lambda x: x + "s")
+    # ensure column remains a string after saved and reloaded:
+    # df_imputed[col] = df_imputed[col].apply(lambda x: x + "s")
 
     # Binarize var_1
     df_imputed["var_1"] = df_imputed["var_1"].astype(bool)
