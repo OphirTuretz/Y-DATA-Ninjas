@@ -77,8 +77,8 @@ WANDB_PROJECT = "pre-main"
 MODEL_GS_PARAM_GRID = {
     "num_leaves": [31],
     "iterations": [1000],
-    "learning_rate": np.logspace(np.log10(0.0001), np.log10(0.5), 5),
-    "eval_metric": ["F1"],
+    "learning_rate": [0.01],
+    "eval_metric": ["PRAUC"],
     "depth": [6, 10, 16], #np.arange(4, 11, 2),
     "l2_leaf_reg": np.linspace(0, 5, 3),
     "nan_mode": ["Min"],
