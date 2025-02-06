@@ -14,7 +14,8 @@ from app.const import (
     MODELS_FOLDER,
     DEFAULT_MODEL_PATH,
     WANDB_PROJECT,
-    COLUMNS_TO_CATEGORIZE,
+    CATEGORICAL_FEATURES_CATBOOST,
+    FEATURES_TYPE_MAP,
 )
 
 
@@ -41,7 +42,8 @@ def prepare_data(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
     print("Preparing data...")
     print("Extracting features...")
     X = df[FEATURES_LIST]
-    X[COLUMNS_TO_CATEGORIZE] = X[COLUMNS_TO_CATEGORIZE].astype(str)
+    # cat_features must be integer or string, real number values and NaN values should be converted to string.
+    X[CATEGORICAL_FEATURES_CATBOOST] = X[CATEGORICAL_FEATURES_CATBOOST].astype(str)
     print("Features extracted.")
     print("Extracting target...")
     y = df[TARGET_COLUMN]
@@ -52,7 +54,7 @@ def prepare_data(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
 
 def load_data(path: str) -> pd.DataFrame:
     print(f"Loading data from {path}...")
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, dtype=FEATURES_TYPE_MAP)
     print(df.info())
     print("Data loaded.")
     return df
@@ -150,7 +152,7 @@ if __name__ == "__main__":
     run.log(hyperparams)
 
     # Train model
-    model = fit_model(model, X_train, y_train, COLUMNS_TO_CATEGORIZE)
+    model = fit_model(model, X_train, y_train, CATEGORICAL_FEATURES_CATBOOST)
 
     # Save model
     save_model(model)
