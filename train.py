@@ -93,7 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("-em", "--eval-metric", default="F1", help="Evaluation metric")
     parser.add_argument("-d", "--depth", default=6, type=int, help="Depth of the tree")
     parser.add_argument(
-        "-l2", "--l2-leaf-reg", default=1, type=float, help="L2 regularization"
+        "-l2", "--l2-leaf-reg", default=3, type=float, help="L2 regularization"
     )
     parser.add_argument("-nm", "--nan-mode", default="Min", help="NaN handling mode")
     parser.add_argument(
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-l", "--loss-function", default="Logloss", help="Loss function"
     )
-    parser.add_argument("-cw", "--class-weights", default=None, help="Class weights")
+    parser.add_argument("-cw", "--class-weights", default='Balanced', help="Class weights")
 
     args = parser.parse_args()
 

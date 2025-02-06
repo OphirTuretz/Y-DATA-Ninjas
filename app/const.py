@@ -101,3 +101,5 @@ MODEL_GS_PARAM_GRID = {
     "loss_function": ["Logloss"],
     "class_weights": ["Balanced"],  # ["Default", "Balanced"],
 }
+
+REVENUE_COST_DICT  = {'revenue': 2, 'cost': 0.02}

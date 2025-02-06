@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--predictions-file-name", default=None)
     parser.add_argument("-po", "--predictions-only", default=DEFAULT_PREDICTIONS_ONLY)
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
-    parser.add_argument('-pb', '--predict-proba', default=True, action='store_true')
+    parser.add_argument('-pb', '--predict-proba', default=True, action='store_false') # default=True
 
     args = parser.parse_args()
 
