@@ -13,11 +13,12 @@ import matplotlib.pyplot as plt
 #    level=logging.INFO,
 #    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
 #)
-def log_profit(y_true, y_pred, precisions, recalls, thresholds):
+def log_profit(y_true, y_pred, precisions, recalls, thresholds, revenue_cost):
     # Calculate profit from revenue and cost
     print("Calculating profit...")
-    revenue = REVENUE_COST_DICT['revenue']
-    cost = REVENUE_COST_DICT['cost']
+    revenue_cost = list(revenue_cost)
+    revenue = revenue_cost[0] # Revenue is the first element in the list
+    cost = revenue_cost[1] # Cost is the second element in the list
     tp = recalls * sum(y_true)  # Recall = TP / (TP + FN) → TP = Recall * (TP + FN)
     fp = (tp / (precisions + 1e-10)) - tp
     profits = tp * revenue - fp * cost
@@ -35,6 +36,7 @@ def log_profit(y_true, y_pred, precisions, recalls, thresholds):
 
     # Log a short summary of the profit
     summary = f"""
+
     ## Profit Optimization Summary
 
     In our current scenario:  
@@ -50,6 +52,7 @@ def log_profit(y_true, y_pred, precisions, recalls, thresholds):
     print(summary)
     run.log({"profit_summary": wandb.Html(summary)}) # Can be found in the file/media tab of the run
 
+    # Return the profits and the threshold for the plotting method
     return profits, max_profit_threshold
 
 def plot_profit_per_threshold(precisions, recalls, thresholds, profits, max_profit_threshold):
@@ -59,7 +62,7 @@ def plot_profit_per_threshold(precisions, recalls, thresholds, profits, max_prof
     optimal_threshold_for_f1 = thresholds[np.argmax(f1_scores)]
 
     # Plot Profit vs. Threshold
-    plt.plot(thresholds, profits[:-1], label="Profit Curve", color='blue')
+    plt.plot(thresholds, profits[:-1], label="Profit Curve", color='blue') # There is one less profit than thresholds
     plt.axvline(x=max_profit_threshold, color='red', linestyle="--", 
                 label=f"Best Threshold = {max_profit_threshold:.2f}")
     
@@ -133,6 +136,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-i", "--input-data-path", default=DEFAULT_CSV_PREDICTIONS_TRAIN_PATH)
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
+    parser.add_argument("-cr", "--cost-revenue", default=REVENUE_COST_DICT.values())
 
     args = parser.parse_args()
 
@@ -188,7 +192,7 @@ if __name__ == "__main__":
         plot_pr_curve(y_true, y_pred)
 
         # Calculate profit and log it
-        profits, max_profit_threshold = log_profit(y_true, y_pred, precisions, recalls, thresholds)
+        profits, max_profit_threshold = log_profit(y_true, y_pred, precisions, recalls, thresholds, args.cost_revenue)
 
         # Plot profit vs. threshold
         optimal_thrshold_for_f1 =  plot_profit_per_threshold(precisions, recalls, thresholds, profits, max_profit_threshold)
