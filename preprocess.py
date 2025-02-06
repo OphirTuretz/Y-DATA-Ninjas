@@ -220,7 +220,9 @@ if __name__ == "__main__":
     # wandb.init(project=WANDB_PROJECT, group=args.wandb_group_id, job_type="preprocess")
 
     raw_df = load_data(args.csv_raw_path)
-
+    false_dict = ['False', 'false', 'n', 'N', 'no', 'No']
+    if args.test_train_split in false_dict:
+        args.test_train_split=False
     if args.inference_run:
         preprocess_raw_inference(raw_df)
     else:
