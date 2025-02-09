@@ -10,6 +10,7 @@ import subprocess as sp
 from datetime import datetime
 import os
 import time
+import random
 
 INPUT_FILE_NAME = "inference"
 OUTPUT_FILE_NAME = "predictions"
@@ -128,7 +129,16 @@ if uploaded_file is not None:
 
             # Perform prediction
             cmd = f"python predict.py --input-data-path {preprocessed_inference_file_path} --predictions-only True --predictions-file-name {predictions_file_name}"
-            result = sp.run(cmd, shell=True, check=True, capture_output=True, text=True)
+            # result = sp.run(cmd, shell=True, check=True, capture_output=True, text=True)
+            process = sp.Popen(
+                cmd, shell=True, stdout=sp.PIPE, stderr=sp.STDOUT, text=True
+            )
+            progress = 2 / 3
+            while process.poll() is None:
+                increment = random.uniform(0.005, 0.01)
+                progress = min(progress + increment, 0.95)
+                progress_bar.progress(progress, text="Making predictions...")
+                time.sleep(random.uniform(0.8, 1.5))
 
             progress_bar.progress(1.0, text="Done!")
             time.sleep(1)
