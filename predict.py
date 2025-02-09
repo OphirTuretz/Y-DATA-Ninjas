@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--predictions-file-name", default=None)
     parser.add_argument("-po", "--predictions-only", default=DEFAULT_PREDICTIONS_ONLY)
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
-    parser.add_argument('-pb', '--predict-proba', default=True, action='store_false') # default=True
+    parser.add_argument('-pb', '--predict-proba', default=True, action='store_false') # default=True, if given -pb flag then False
 
     args = parser.parse_args()
 
@@ -105,7 +105,6 @@ if __name__ == "__main__":
     run = wandb.init(
         entity="Y-DATA-Ninjas", project=WANDB_PROJECT, id=last_run.id, resume="must"
     )
-    run.log({"predictions_array": predictions.tolist()})
 
     if args.predictions_file_name is not None:
         out_path = os.path.join(RESULTS_FOLDER, args.predictions_file_name)

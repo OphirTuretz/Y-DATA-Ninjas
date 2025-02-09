@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-i", "--input-data-path", default=DEFAULT_CSV_PREDICTIONS_TRAIN_PATH)
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
-    parser.add_argument("-cr", "--cost-revenue", default=REVENUE_COST_DICT.values())
+    # parser.add_argument("-cr", "--cost-revenue", default=REVENUE_COST_DICT.values())
 
     args = parser.parse_args()
 
@@ -192,14 +192,15 @@ if __name__ == "__main__":
         plot_pr_curve(y_true, y_pred)
 
         # Calculate profit and log it
-        profits, max_profit_threshold = log_profit(y_true, y_pred, precisions, recalls, thresholds, args.cost_revenue)
+        # profits, max_profit_threshold = log_profit(y_true, y_pred, precisions, recalls, thresholds, args.cost_revenue)
 
         # Plot profit vs. threshold
-        optimal_thrshold_for_f1 =  plot_profit_per_threshold(precisions, recalls, thresholds, profits, max_profit_threshold)
+        # optimal_thrshold_for_f1 =  plot_profit_per_threshold(precisions, recalls, thresholds, profits, max_profit_threshold)
 
 
-        print("Binarizing predictions and calculating metrics for binary classification...")
-        y_pred = np.where(y_pred > optimal_thrshold_for_f1, 1, 0)
+        # print("Binarizing predictions and calculating metrics for binary classification...")
+        # y_pred = np.where(y_pred > optimal_thrshold_for_f1, 1, 0)
+        y_pred = np.where(y_pred > 0.5, 1, 0)
         f1=f1_score(y_true, y_pred)
         precision=precision_score(y_true, y_pred)
         recall=recall_score(y_true, y_pred)
