@@ -35,8 +35,8 @@ def save_predictions(
     print("Predictions saved.")
 
 
-def make_predictions(model, X: np.ndarray, predict_proba: bool = False) -> np.ndarray:
-    if predict_proba:
+def make_predictions(model, X: np.ndarray, predict_class: bool = False) -> np.ndarray:
+    if not predict_class:
         print("Making predictions in probability form...")
         predictions = model.predict_proba(X)[:, 1]
     else:
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--predictions-file-name", default=None)
     parser.add_argument("-po", "--predictions-only", default=DEFAULT_PREDICTIONS_ONLY)
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
-    parser.add_argument('-pb', '--predict-proba', default=True, action='store_false') # default=True, if given -pb flag then False
+    parser.add_argument('-pc', '--predict-class', default=False, action='store_true') 
 
     args = parser.parse_args()
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     # TODO: download model from wandb (downloaded_model_path = run.use_model(name="<your-model-name>"))
 
-    predictions = make_predictions(model, X, args.predict_proba)
+    predictions = make_predictions(model, X, args.predict_class)
 
     # Resume the run to log the predictions
     api = wandb.Api()
