@@ -101,3 +101,7 @@ MODEL_GS_PARAM_GRID = {
     "loss_function": ["Logloss"],
     "class_weights": ["Balanced"],  # ["Default", "Balanced"],
 }
+
+STREAMLIT_OUTPUT_FILE_NAME_PREFIX = "predictions"
+STREAMLIT_INPUT_FILE_NAME_PREFIX = "raw_inference"
+STREAMLIT_PREPROCESSED_FILE_NAME_PREFIX = "inference"

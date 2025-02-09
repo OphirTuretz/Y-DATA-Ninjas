@@ -78,6 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--predictions-file-name", default=None)
     parser.add_argument("-po", "--predictions-only", default=DEFAULT_PREDICTIONS_ONLY)
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
+    parser.add_argument("-iw", "--ignore-wandb", action="store_true")
 
     args = parser.parse_args()
 
@@ -93,14 +94,15 @@ if __name__ == "__main__":
     predictions = make_predictions(model, X)
 
     # Resume the run to log the predictions
-    api = wandb.Api()
-    runs = api.runs(f"Y-DATA-Ninjas/{WANDB_PROJECT}")
-    runs_list = list(runs)  # Convert to a list
-    last_run = runs_list[-1]
-    run = wandb.init(
-        entity="Y-DATA-Ninjas", project=WANDB_PROJECT, id=last_run.id, resume="must"
-    )
-    run.log({"predictions_array": predictions.tolist()})
+    if not args.ignore_wandb:
+        api = wandb.Api()
+        runs = api.runs(f"Y-DATA-Ninjas/{WANDB_PROJECT}")
+        runs_list = list(runs)  # Convert to a list
+        last_run = runs_list[-1]
+        run = wandb.init(
+            entity="Y-DATA-Ninjas", project=WANDB_PROJECT, id=last_run.id, resume="must"
+        )
+        run.log({"predictions_array": predictions.tolist()})
 
     if args.predictions_file_name is not None:
         out_path = os.path.join(RESULTS_FOLDER, args.predictions_file_name)
