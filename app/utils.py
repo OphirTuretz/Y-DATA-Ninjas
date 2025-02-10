@@ -1,3 +1,4 @@
+
 def str2bool(s):
     if isinstance(s, bool):
         return s

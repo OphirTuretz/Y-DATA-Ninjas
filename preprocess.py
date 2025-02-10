@@ -20,6 +20,7 @@ from app.const import (
     DEFAULT_CSV_INFERENCE_PATH,
     WANDB_PROJECT,
 )
+from app.utils import str2bool
 
 
 def impute(df: pd.DataFrame) -> pd.DataFrame:
@@ -202,14 +203,14 @@ if __name__ == "__main__":
 
     parser.add_argument("-crp", "--csv-raw-path", default=DEFAULT_CSV_RAW_TRAIN_PATH)
 
-    parser.add_argument("-infr", "--inference-run", default=False)
+    parser.add_argument("-infr", "--inference-run", default=False, type=str2bool)
 
-    parser.add_argument("-rd", "--remove-duplicates", default=DEFAULT_REMOVE_DUPLICATES)
+    parser.add_argument("-rd", "--remove-duplicates", default=DEFAULT_REMOVE_DUPLICATES, type=str2bool)
     parser.add_argument(
-        "-rmt", "--remove-missing-target", default=DEFAULT_REMOVE_MISSING_TARGET
+        "-rmt", "--remove-missing-target", default=DEFAULT_REMOVE_MISSING_TARGET, type=str2bool
     )
 
-    parser.add_argument("-tts", "--test-train-split", default=DEFAULT_TEST_TRAIN_SPLIT)
+    parser.add_argument("-tts", "--test-train-split", default=DEFAULT_TEST_TRAIN_SPLIT, type=str2bool)
     parser.add_argument("-ts", "--test-size", default=DEFAULT_TEST_SIZE)
 
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
@@ -220,7 +221,6 @@ if __name__ == "__main__":
     # wandb.init(project=WANDB_PROJECT, group=args.wandb_group_id, job_type="preprocess")
 
     raw_df = load_data(args.csv_raw_path)
-
     if args.inference_run:
         preprocess_raw_inference(raw_df)
     else:
