@@ -166,10 +166,10 @@ if uploaded_file is not None:
             st.subheader("🔮 Preview of CTR Predictions")
 
             st.session_state.predictions = pd.read_csv(file, header = None)
+            st.session_state.predictions.columns = ["predictions"]
             st.dataframe(
                 st.session_state.predictions.head(),
                 hide_index=True,
-                column_config={0.0: "predictions"},
             )
 
             # Show the user the available action options
