@@ -72,10 +72,118 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     # Impute Gender and Age_level and campaign_id
     df_imputed = impute(df)
 
+
+
     # Extract dt features
     df_imputed["dt"] = pd.to_datetime(df_imputed["DateTime"])
     df_imputed["hour"] = df_imputed["dt"].dt.hour
     df_imputed["day"] = df_imputed["dt"].dt.day
+
+    df_imputed['date'] = df_imputed['dt'].dt.date
+    # df_imputed = df_imputed.sort_values('dt')
+
+    df_dt_not_null = df_imputed.copy()
+
+    df_dt_not_null = df_dt_not_null.dropna(subset=['date'])
+
+    df_dt_not_null = df_dt_not_null.dropna(subset=['user_id'])
+
+    # Find the minimum date for each user
+    min_date = df_dt_not_null.groupby('user_id')['date'].min().reset_index()
+    min_date.columns = ['user_id', 'min_date']
+
+    # Merging the minimum date back to the original dataframe
+    df_imputed = df_imputed.merge(min_date, on='user_id', how='left')
+
+    # Set the reference date (earliest date in your dataset)
+    reference_date = pd.to_datetime('2017-07-02').date()
+
+    # Generate the mapping dynamically with handling for missing/invalid dates
+    def get_day_number(date):
+        if pd.isna(date):  # Check for missing/invalid dates
+            return -1
+        return (date - reference_date).days + 1
+
+    df_imputed['first_day'] = df_imputed['min_date'].apply(get_day_number)
+
+
+    # Calculate Appearance Frequency of the user
+    df_imputed['session_freq'] = df_imputed.groupby('user_id')['user_id'].transform('count')
+
+    # Add 'Appeared more than once' column
+    df_imputed['is_more_than_once'] = df_imputed['session_freq'].apply(lambda x: 1 if x > 1 else 0)
+
+    # Calculate Appearance Frequency of the user with the same campaign_id value
+    df_imputed['same_campaign_freq'] = df_imputed.groupby(['user_id', 'campaign_id'])['user_id'].transform('count').astype('Int64')
+
+    # Calculate Appearance Frequency of the user with the same campaign_id value
+    df_imputed['same_product_freq'] = df_imputed.groupby(['user_id', 'product'])['user_id'].transform('count').astype('Int64')
+
+    df_imputed['same_product_freq'] = df_imputed['same_product_freq'].fillna(0)
+    df_imputed['same_campaign_freq'] = df_imputed['same_campaign_freq'].fillna(0)
+    df_imputed['session_freq'] = df_imputed['session_freq'].fillna(0)
+    df_imputed['is_more_than_once'] = df_imputed['is_more_than_once'].fillna(0)
+
+
+    df_imputed['current_session_freq'] = df_imputed.groupby('user_id', observed=True).cumcount() + 1
+    df_imputed['current_is_more_than_once'] = (df_imputed['current_session_freq'] > 1).astype(int)
+    df_imputed['current_same_campaign_freq'] = df_imputed.groupby(['user_id', 'campaign_id'], observed=True).cumcount() + 1
+    df_imputed['current_same_product_freq'] = df_imputed.groupby(['user_id', 'product'], observed=True).cumcount() + 1
+
+    df_imputed['current_session_freq'] = df_imputed['current_session_freq'].fillna(0)
+    df_imputed['current_is_more_than_once'] = df_imputed['current_is_more_than_once'].fillna(0)
+    df_imputed['current_same_campaign_freq'] = df_imputed['current_same_campaign_freq'].fillna(0)
+    df_imputed['current_same_product_freq'] = df_imputed['current_same_product_freq'].fillna(0)
+
+    # Mapping dictionary
+    mapping_categoty_1 = {
+        82527.0: (4.0, 'mode'),
+        146115.0: (1.0, 'mode'),
+        270915.0: (5.0, 'mode'),
+        254132.0: (5.0, 'mode'),
+        269093.0: (1.0, 'unique'),
+        143597.0: (1.0, 'mode'),
+        32026.0: (1.0, 'unique'),
+        202351.0: (2.0, 'unique'),
+        234846.0: (1.0, 'unique'),
+        66101.0: (3.0, 'unique'),
+        255689.0: (1.0, 'unique'),
+        372532.0: (1.0, 'unique'),
+        408790.0: (1.0, 'unique'),
+        419804.0: (1.0, 'unique'),
+        450184.0: (1.0, 'unique'),
+        327439.0: (1.0, 'mode'),
+        18595.0: (1.0, 'mode'),
+        168114.0: (1.0, 'unique'),
+        235358.0: (1.0, 'unique'),
+        247789.0: (1.0, 'unique'),
+        381435.0: (1.0, 'unique'),
+        300711.0: (1.0, 'unique'),
+        99226.0: (1.0, 'unique'),
+        447834.0: (1.0, 'unique'),
+        181650.0: (1.0, 'unique'),
+        408831.0: (4.0, 'unique'),
+        301147.0: (1.0, 'unique'),
+        270147.0: (5.0, 'unique')
+    }
+
+    # Flag to control whether to use only "unique" keys or all keys in the dictionary.
+    only_unique = False
+
+    # Filter the mapping dictionary based on the `only_unique` flag.
+    if only_unique:
+        filtered_mapping = {k: v[0] for k, v in mapping_categoty_1.items() if v[1] == 'unique'}
+    else:
+        filtered_mapping = {k: v[0] for k, v in mapping_categoty_1.items()}
+
+    # Function to replace null values
+    def replace_null(row):
+        if pd.isna(row['product_category_1']) and row['product_category_2'] in filtered_mapping:
+            return filtered_mapping[row['product_category_2']]
+        return row['product_category_1']
+
+    # Apply the replacement of nulls
+    df_imputed['product_category_1'] = df_imputed.apply(replace_null, axis=1)
 
     # ensure column remains a string after saved and reloaded:
     # df_imputed[col] = df_imputed[col].apply(lambda x: x + "s")
@@ -85,6 +193,19 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
     # After imputation, all info contained in is_male and age level and dt:
     columns_to_drop = [
+        "date",
+        "min_date",
+        "first_day", #
+        "session_freq", #
+        "is_more_than_once", #
+        "same_campaign_freq", #
+        "same_product_freq", #
+        "current_session_freq",  #
+        "current_is_more_than_once",  #
+        "current_same_campaign_freq",  #
+        "current_same_product_freq",  #
+
+
         "user_group_id",
         "DateTime",
         "dt",

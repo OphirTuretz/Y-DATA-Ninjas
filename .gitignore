@@ -1,5 +1,5 @@
 # Project ML directories
-data/
+
 models/
 results/
 archived_experiments/
