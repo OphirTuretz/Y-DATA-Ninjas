@@ -168,7 +168,7 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     }
 
     # Flag to control whether to use only "unique" keys or all keys in the dictionary.
-    only_unique = False
+    only_unique = True
 
     # Filter the mapping dictionary based on the `only_unique` flag.
     if only_unique:
