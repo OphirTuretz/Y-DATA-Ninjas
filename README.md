@@ -62,6 +62,8 @@ To set up the project environment and run the pipeline, follow these steps:
 
 # Run the Web Page Interface
 
+Before running the web interface, make sure that there is a model file (`model.pkl`) in the `models` folder, as it will be used to make predictions.
+
 You can run the web page interface to accept dataset files and make predictions:
 
 ### Locally
@@ -72,3 +74,4 @@ streamlit run WebPredict.py
 ### Open to Access from Outside
 ```bash
 streamlit run WebPredict.py --server.address 0.0.0.0 --server.port 8501
+```
