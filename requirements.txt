@@ -12,3 +12,4 @@ catboost
 lightgbm
 lightgbm[pandas]
 lightgbm[scikit-learn]
+streamlit

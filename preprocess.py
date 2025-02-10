@@ -143,14 +143,19 @@ def split_data(
     return train_df, test_df
 
 
-def preprocess_raw_inference(df: pd.DataFrame):
+def preprocess_raw_inference(df: pd.DataFrame, inference_output_file_name=None):
     print("Preprocessing raw inference data...")
     df = preprocess(df)
     # TODO: Imputation? (based on the training set)
     # TODO: Encoding of categorical variables? (based on the training set)
     # TODO: Feature engineering? (based on the training set)
     # TODO: Other preprocessing steps? (based on the training set)
-    save_data(df, DEFAULT_CSV_INFERENCE_PATH)
+
+    if inference_output_file_name is not None:
+        output_path = os.path.join(DATA_FOLDER, inference_output_file_name)
+    else:
+        output_path = DEFAULT_CSV_INFERENCE_PATH
+    save_data(df, output_path)
     print("Raw inference data preprocessed.")
 
 
@@ -205,12 +210,21 @@ if __name__ == "__main__":
 
     parser.add_argument("-infr", "--inference-run", default=False, type=str2bool)
 
-    parser.add_argument("-rd", "--remove-duplicates", default=DEFAULT_REMOVE_DUPLICATES, type=str2bool)
+    parser.add_argument("-io", "--inference-output-file-name", default=None)
+
     parser.add_argument(
-        "-rmt", "--remove-missing-target", default=DEFAULT_REMOVE_MISSING_TARGET, type=str2bool
+        "-rd", "--remove-duplicates", default=DEFAULT_REMOVE_DUPLICATES, type=str2bool
+    )
+    parser.add_argument(
+        "-rmt",
+        "--remove-missing-target",
+        default=DEFAULT_REMOVE_MISSING_TARGET,
+        type=str2bool,
     )
 
-    parser.add_argument("-tts", "--test-train-split", default=DEFAULT_TEST_TRAIN_SPLIT, type=str2bool)
+    parser.add_argument(
+        "-tts", "--test-train-split", default=DEFAULT_TEST_TRAIN_SPLIT, type=str2bool
+    )
     parser.add_argument("-ts", "--test-size", default=DEFAULT_TEST_SIZE)
 
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
@@ -222,7 +236,7 @@ if __name__ == "__main__":
 
     raw_df = load_data(args.csv_raw_path)
     if args.inference_run:
-        preprocess_raw_inference(raw_df)
+        preprocess_raw_inference(raw_df, args.inference_output_file_name)
     else:
         preprocess_raw_train(
             raw_df,
