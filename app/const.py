@@ -102,6 +102,8 @@ MODEL_GS_PARAM_GRID = {
     "class_weights": ["Balanced"],  # ["Default", "Balanced"],
 }
 
+REVENUE_COST_DICT  = {'revenue': 2, 'cost': 0.02}
+
 STREAMLIT_OUTPUT_FILE_NAME_PREFIX = "predictions"
 STREAMLIT_INPUT_FILE_NAME_PREFIX = "raw_inference"
 STREAMLIT_PREPROCESSED_FILE_NAME_PREFIX = "inference"

@@ -5,6 +5,7 @@ results/
 archived_experiments/
 wandb/
 catboost_info/
+notebook.ipynb
 
 
 # Created by .ignore support plugin (hsz.mobi)
