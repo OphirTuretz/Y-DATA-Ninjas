@@ -185,6 +185,44 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     # Apply the replacement of nulls
     df_imputed['product_category_1'] = df_imputed.apply(replace_null, axis=1)
 
+
+    # click ratio features
+
+    category1session = df.groupby('product_category_1')['session_id'].count()
+    category1click = df[df['is_click'] == 1].groupby('product_category_1')['session_id'].count()
+    category1_analysis = category1session.to_frame("session_count1")
+    category1_analysis['clicks_count1'] = category1click
+    category1_analysis['click_ratio1'] = category1_analysis['clicks_count1'] / category1_analysis['session_count1']
+    category1_analysis.fillna(0, inplace=True)
+    df = df.merge(category1_analysis['click_ratio1'].reset_index(), how='left', on='product_category_1')
+    user_category1 = df.groupby('user_id')['click_ratio1'].max().reset_index()
+    user_category1.columns = ['user_id', 'user_max_click_ratio1']
+    df = df.merge(user_category1, how='left', on='user_id')
+
+    category2session = df.groupby('product_category_2')['session_id'].count()
+    category2click = df[df['is_click'] == 1].groupby('product_category_2')['session_id'].count()
+    category2_analysis = category2session.to_frame("session_count2")
+    category2_analysis['clicks_count2'] = category2click
+    category2_analysis['click_ratio2'] = category2_analysis['clicks_count2'] / category2_analysis['session_count2']
+    category2_analysis.fillna(0, inplace=True)
+    df = df.merge(category2_analysis['click_ratio2'].reset_index(), how='left', on='product_category_2')
+    user_category2 = df.groupby('user_id')['click_ratio2'].max().reset_index()
+    user_category2.columns = ['user_id', 'user_max_click_ratio2']
+    df = df.merge(user_category2, how='left', on='user_id')
+
+    product_session = df.groupby('product')['session_id'].count()
+    product_click = df[df['is_click'] == 1].groupby('product')['session_id'].count()
+    product_analysis = product_session.to_frame("session_count_prod")
+    product_analysis['clicks_count_prod'] = product_click
+    product_analysis['click_ratio_prod'] = product_analysis['clicks_count_prod'] / product_analysis[
+        'session_count_prod']
+    product_analysis.fillna(0, inplace=True)
+    df = df.merge(product_analysis['click_ratio_prod'].reset_index(), how='left', on='product')
+    user_prod = df.groupby('user_id')['click_ratio_prod'].max().reset_index()
+    user_prod.columns = ['user_id', 'user_max_click_ratio_prod']
+    df = df.merge(user_prod, how='left', on='user_id')
+
+
     # ensure column remains a string after saved and reloaded:
     # df_imputed[col] = df_imputed[col].apply(lambda x: x + "s")
 
@@ -205,6 +243,12 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
         "current_same_campaign_freq",  #
         "current_same_product_freq",  #
 
+        'click_ratio2',
+        'click_ratio_prod',
+        'user_max_click_ratio2',
+        'click_ratio1',
+        'user_max_click_ratio1',
+        #'user_max_click_ratio_prod',
 
         "user_group_id",
         "DateTime",
