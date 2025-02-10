@@ -59,3 +59,16 @@ To set up the project environment and run the pipeline, follow these steps:
    ```bash
    inv pipeline
    ```
+
+# Run the Web Page Interface
+
+You can run the web page interface to accept dataset files and make predictions:
+
+### Locally
+```bash
+streamlit run WebPredict.py
+```
+
+### Open to Access from Outside
+```bash
+streamlit run WebPredict.py --server.address 0.0.0.0 --server.port 8501
