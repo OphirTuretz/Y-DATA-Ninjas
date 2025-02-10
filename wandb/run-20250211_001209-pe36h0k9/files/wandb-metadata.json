@@ -1,0 +1,39 @@
+{
+  "os":  "Windows-11-10.0.22631-SP0",
+  "python":  "CPython 3.12.8",
+  "startedAt":  "2025-02-10T22:12:10.136146Z",
+  "args":  [
+    "--wandb-group-id",
+    "experiment-0v764fxv",
+    "--input-data-path",
+    "data\\test.csv",
+    "--predictions-file-name",
+    "predictions_test.csv"
+  ],
+  "program":  "C:\\Users\\asafc\\Y-DATA-Ninjas\\predict.py",
+  "codePath":  "predict.py",
+  "git":  {
+    "remote":  "https://github.com/OphirTuretz/Y-DATA-Ninjas.git",
+    "commit":  "cb02d7a38edd04f1069c36aa9e4ff3e2560e0144"
+  },
+  "email":  "asafcohe@gmail.com",
+  "root":  "C:\\Users\\asafc\\Y-DATA-Ninjas",
+  "host":  "Asaf",
+  "executable":  "C:\\Users\\asafc\\Y-DATA-Ninjas\\venv\\Scripts\\python.exe",
+  "codePathLocal":  "predict.py",
+  "cpu_count":  4,
+  "cpu_count_logical":  8,
+  "disk":  {
+    "/":  {
+      "total":  "491307134976",
+      "used":  "462883139584"
+    }
+  },
+  "memory":  {
+    "total":  "16905961472"
+  },
+  "cpu":  {
+    "count":  4,
+    "countLogical":  8
+  }
+}

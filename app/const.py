@@ -49,6 +49,7 @@ FEATURES_LIST = [
     "campaign_id",
     "product_category_1",
     "product_category_2",
+<<<<<<< Updated upstream
     "gender_Male",            # one-hot encoded gender dummy
     "age_level",
     "user_depth",
@@ -63,6 +64,22 @@ FEATURES_LIST = [
 
 FEATURES_TYPE_MAP = {
     "product": "str",                      # or "category" if you prefer
+=======
+    "gender_Male",           # one-hot encoded gender
+    "age_level",
+    "user_depth",
+    "city_development_index",
+    "var_1_bin",             # binarized version of var_1
+    "hour",
+    "day",
+    "user_session_count",    # new user behavior feature
+    "user_click_count",      # new user behavior feature
+    "user_ctr"               # new user behavior feature
+]
+
+FEATURES_TYPE_MAP = {
+    "product": "str",                      # or "category" if preferred
+>>>>>>> Stashed changes
     "campaign_id": "float64",
     "product_category_1": "float64",
     "product_category_2": "float64",
@@ -78,9 +95,12 @@ FEATURES_TYPE_MAP = {
     "user_ctr": "float64"                   # new feature: click-through rate per user
 }
 
+<<<<<<< Updated upstream
 # For CatBoost, you typically specify the names of the categorical features.
 # Since you have one-hot encoded 'gender', and replaced 'var_1' with 'var_1_bin' (which is numeric),
 # the remaining categorical features may just be:
+=======
+>>>>>>> Stashed changes
 CATEGORICAL_FEATURES_CATBOOST = [
     "product",
     "campaign_id",
@@ -95,7 +115,11 @@ DEFAULT_PREDICTIONS_ONLY = False
 
 DATE_TIME_PATTERN = "%Y-%m-%d_%H-%M-%S"
 
+<<<<<<< Updated upstream
 WANDB_PROJECT = "asaf_run"
+=======
+WANDB_PROJECT = "asaf-run"
+>>>>>>> Stashed changes
 
 # https://catboost.ai/docs/en/references/custom-metric__supported-metrics
 # https://catboost.ai/docs/en/references/training-parameters/common
