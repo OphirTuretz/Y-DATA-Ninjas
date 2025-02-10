@@ -1,0 +1,35 @@
+{
+  "os": "Windows-11-10.0.22631-SP0",
+  "python": "CPython 3.12.8",
+  "startedAt": "2025-02-09T23:27:20.528406Z",
+  "args": [
+    "--class-weights",
+    "Balanced"
+  ],
+  "program": "C:\\Users\\asafc\\Downloads\\Y-DATA-Ninjas\\train.py",
+  "codePath": "train.py",
+  "git": {
+    "remote": "https://github.com/OphirTuretz/Y-DATA-Ninjas.git",
+    "commit": "072b4c1a9f3dcd9240c142acb04327e0833b6575"
+  },
+  "email": "asafcohe@gmail.com",
+  "root": "C:\\Users\\asafc\\Downloads\\Y-DATA-Ninjas",
+  "host": "Asaf",
+  "executable": "C:\\Users\\asafc\\Downloads\\Y-DATA-Ninjas\\venv\\Scripts\\python.exe",
+  "codePathLocal": "train.py",
+  "cpu_count": 4,
+  "cpu_count_logical": 8,
+  "disk": {
+    "/": {
+      "total": "491307134976",
+      "used": "485229543424"
+    }
+  },
+  "memory": {
+    "total": "16905961472"
+  },
+  "cpu": {
+    "count": 4,
+    "countLogical": 8
+  }
+}

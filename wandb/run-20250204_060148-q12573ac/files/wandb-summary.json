@@ -1,0 +1,1 @@
+{"nan_mode":"Min","eval_metric":"F1","_wandb":{"runtime":6707},"model":"CatBoost","num_leaves":31,"early_stopping_rounds":10,"l2_leaf_reg":5,"class_weights":[1,13.739785918890398],"depth":16,"_runtime":0.5634168,"_step":1,"_timestamp":1.738641709349645e+09,"iterations":1000,"loss_function":"Logloss","learning_rate":0.0001}

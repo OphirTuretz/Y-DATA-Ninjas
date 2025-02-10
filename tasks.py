@@ -30,6 +30,7 @@ def train(c):
     c.run("python train.py")
 
 
+<<<<<<< Updated upstream
 @task
 def predict(c):
     """
@@ -87,3 +88,41 @@ def archive(c, name, base_folder=ARCHIVED_EXPERIMENTS_DIR):
     c.run(f"cp -r wandb {archive_path} || true")
 
     print(f"Archived experiment to: {archive_path}")
+=======
+@task(optional=["name", "base_folder", "leave_data"])
+def archive_experiment(c, name=UKNOWN_EXPERIMENT_NAME, base_folder=ARCHIVE_FOLDER, leave_data=False):
+    from datetime import datetime
+    import os
+    import shutil
+    # Create experiment folder with timestamp
+    name = f"{datetime.now().strftime(DATE_TIME_PATTERN)}_{name}"
+    print(f"Archiving experiment {name}...")
+    os.makedirs(base_folder, exist_ok=True)
+    exp_path = os.path.join(base_folder, name)
+    os.makedirs(exp_path, exist_ok=True)
+    
+    # Archive data folder
+    if os.path.exists("data"):
+        shutil.move("data", exp_path)
+        os.makedirs("data", exist_ok=True)
+        if leave_data:
+            for file in os.listdir(os.path.join(exp_path, "data")):
+                shutil.copy(os.path.join(exp_path, "data", file), "data")
+        else:
+            for file in [CSV_RAW_TRAIN_FILENAME, CSV_RAW_INFERENCE_FILENAME]:
+                src_file = os.path.join(exp_path, "data", file)
+                if os.path.exists(src_file):
+                    shutil.copy(src_file, "data")
+    
+    # Archive results folder
+    if os.path.exists("results"):
+        shutil.move("results", exp_path)
+        os.makedirs("results", exist_ok=True)
+    
+    # Do not move models folder - keep it intact
+    if os.path.exists("models"):
+        print("Skipping archiving of the 'models' folder.")
+    
+    print("Experiment archived.")
+
+>>>>>>> Stashed changes

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 pandas
 scikit-learn
 xgboost
@@ -7,3 +8,20 @@ invoke
 numpy
 matplotlib
 seaborn
+=======
+catboost
+invoke
+lightgbm
+lightgbm[pandas]
+lightgbm[scikit-learn]
+matplotlib
+numpy
+pandas
+python-dotenv
+scikit-learn
+seaborn
+streamlit
+wandb
+wandb[media]
+xgboost
+>>>>>>> Stashed changes
