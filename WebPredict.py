@@ -165,7 +165,7 @@ if uploaded_file is not None:
             # Preview the predictions
             st.subheader("🔮 Preview of CTR Predictions")
 
-            st.session_state.predictions = pd.read_csv(file)
+            st.session_state.predictions = pd.read_csv(file, header = None)
             st.dataframe(
                 st.session_state.predictions.head(),
                 hide_index=True,
