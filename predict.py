@@ -35,9 +35,13 @@ def save_predictions(
     print("Predictions saved.")
 
 
-def make_predictions(model, X: np.ndarray) -> np.ndarray:
-    print("Making predictions...")
-    predictions = model.predict(X)
+def make_predictions(model, X: np.ndarray, predict_class: bool = False) -> np.ndarray:
+    if not predict_class:
+        print("Making predictions in probability form...")
+        predictions = model.predict_proba(X)[:, 1]
+    else:
+        print("Making predictions in binary form...")
+        predictions = model.predict(X)
     print("Predictions made.")
     return predictions
 
@@ -78,6 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--predictions-file-name", default=None)
     parser.add_argument("-po", "--predictions-only", default=DEFAULT_PREDICTIONS_ONLY)
     parser.add_argument("-wgid", "--wandb-group-id", default=None)
+    parser.add_argument('-pc', '--predict-class', default=False, action='store_true') 
 
     args = parser.parse_args()
 
@@ -90,7 +95,7 @@ if __name__ == "__main__":
 
     # TODO: download model from wandb (downloaded_model_path = run.use_model(name="<your-model-name>"))
 
-    predictions = make_predictions(model, X)
+    predictions = make_predictions(model, X, args.predict_class)
 
     # Resume the run to log the predictions
     api = wandb.Api()
@@ -100,7 +105,6 @@ if __name__ == "__main__":
     run = wandb.init(
         entity="Y-DATA-Ninjas", project=WANDB_PROJECT, id=last_run.id, resume="must"
     )
-    run.log({"predictions_array": predictions.tolist()})
 
     if args.predictions_file_name is not None:
         out_path = os.path.join(RESULTS_FOLDER, args.predictions_file_name)
