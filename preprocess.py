@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 import os
+import pickle
 from typing import Tuple
 from app.const import (
     DEFAULT_CSV_RAW_TRAIN_PATH,
@@ -89,7 +90,7 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
         "DateTime",
         "dt",
         "session_id",
-        "user_id",
+        #"user_id",
         "webpage_id",
     ]
     df_imputed = df_imputed.drop(columns=columns_to_drop)
@@ -150,6 +151,10 @@ def preprocess_raw_inference(df: pd.DataFrame):
     # TODO: Encoding of categorical variables? (based on the training set)
     # TODO: Feature engineering? (based on the training set)
     # TODO: Other preprocessing steps? (based on the training set)
+    with open('user_click_counts.pkl', 'rb') as file:
+        loaded_click_counts = pickle.load(file)
+    df['user_click_count'] = df['user_id'].map(loaded_click_counts).fillna(0).astype(int)
+    df=df.drop(columns=['user_id'])
     save_data(df, DEFAULT_CSV_INFERENCE_PATH)
     print("Raw inference data preprocessed.")
 
@@ -175,9 +180,20 @@ def preprocess_raw_train(
     df = preprocess(df)
 
     if not test_train_split:
+        user_click_counts = df.groupby('user_id')['is_click'].mean().to_dict()
+        df['user_click_count'] = df['user_id'].map(user_click_counts).fillna(0).astype(int)
+        with open('user_click_counts.pkl', 'wb') as file:
+            pickle.dump(user_click_counts, file)
         save_data(df, DEFAULT_CSV_TRAIN_PATH)
     else:
         train_df, test_df = split_data(df, test_size, random_state)
+        user_click_counts = train_df.groupby('user_id')['is_click'].mean().to_dict()
+        train_df['user_click_count'] = train_df['user_id'].map(user_click_counts).fillna(0).astype(int)
+        test_df['user_click_count'] = test_df['user_id'].map(user_click_counts).fillna(0).astype(int)
+        train_df = train_df.drop(columns=['user_id'])
+        test_df = test_df.drop(columns=['user_id'])
+        with open('user_click_counts.pkl', 'wb') as file:
+            pickle.dump(user_click_counts, file)
         save_data(train_df, DEFAULT_CSV_TRAIN_PATH)
         save_data(test_df, DEFAULT_CSV_TEST_PATH)
 

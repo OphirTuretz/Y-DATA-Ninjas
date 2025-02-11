@@ -56,6 +56,7 @@ FEATURES_LIST = [
     "var_1",
     "hour",
     "day",
+    'user_click_count'
 ]
 FEATURES_TYPE_MAP = {
     "product": "str",
@@ -69,6 +70,7 @@ FEATURES_TYPE_MAP = {
     "var_1": "float64",
     "hour": "float64",
     "day": "float64",
+    'user_click_count': "float64"
 }
 CATEGORICAL_FEATURES_CATBOOST = [
     "product",
