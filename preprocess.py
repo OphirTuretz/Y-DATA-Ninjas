@@ -247,8 +247,8 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
         'click_ratio_prod',
         'user_max_click_ratio2',
         'click_ratio1',
-        'user_max_click_ratio1',
-        #'user_max_click_ratio_prod',
+        #'user_max_click_ratio1',
+        'user_max_click_ratio_prod',
 
         "user_group_id",
         "DateTime",
