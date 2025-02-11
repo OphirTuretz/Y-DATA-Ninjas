@@ -343,6 +343,37 @@ def preprocess_raw_train(
         save_data(df, DEFAULT_CSV_TRAIN_PATH)
     else:
         train_df, test_df = split_data(df, test_size, random_state)
+
+        def compare_distributions(train_df, test_df, columns):
+            comparison_results = []
+
+            for col in columns:
+                train_dist = train_df[col].value_counts(normalize=True).mul(100).round(2)
+                test_dist = test_df[col].value_counts(normalize=True).mul(100).round(2)
+
+                comparison_df = pd.DataFrame({'Train %': train_dist, 'Test %': test_dist}).fillna(0)
+                comparison_df.index.name = col
+
+                comparison_results.append(comparison_df)
+
+            # Start debugging right before printing
+            #breakpoint()  # <-- This will trigger the debugger
+
+            for i, comp_df in enumerate(comparison_results):
+                print(f"\n===== Comparison for {columns[i]} =====")
+                print(comp_df.to_string())
+
+        # List of columns to compare
+        columns_to_compare = [
+            'is_click', 'gender', 'age_level',
+            'user_depth', 'product', 'product_category_2', 'product_category_1'
+        ]
+
+        # Call the function
+        compare_distributions(train_df, test_df, columns_to_compare)
+
+
+
         save_data(train_df, DEFAULT_CSV_TRAIN_PATH)
         save_data(test_df, DEFAULT_CSV_TEST_PATH)
 
