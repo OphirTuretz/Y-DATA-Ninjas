@@ -1,98 +1,226 @@
-"""
-Module for evaluating a trained model on a given dataset and logging results to W&B.
-
-Best practices:
-1. Consistent evaluation approach (accuracy, classification report).
-2. Logging for transparency.
-3. Additional metrics or plots can be added here.
-"""
-
-import logging
+from sklearn.metrics import (classification_report, accuracy_score, f1_score, precision_score, recall_score,
+                             precision_recall_curve, auc)
 import pandas as pd
-import joblib
-from sklearn.metrics import accuracy_score, classification_report
+import numpy as np
+import argparse
 import wandb
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
-)
-
-def load_model(file_path: str):
-    """
-    Load the trained model from a joblib file.
-
-    Args:
-        file_path (str): Path to the saved model.
-
-    Returns:
-        xgb.XGBClassifier: The trained model.
-    """
-    logging.info(f"Loading model from: {file_path}")
-    return joblib.load(file_path)
+from app.const import WANDB_PROJECT, TARGET_COLUMN, PREDICTED_COLUMN, DEFAULT_CSV_PREDICTIONS_TRAIN_PATH, REVENUE_COST_DICT
+import logging
+import matplotlib.pyplot as plt
 
 
-def load_data(file_path: str) -> pd.DataFrame:
-    """
-    Load the test data from a CSV file.
+#logging.basicConfig(
+#    level=logging.INFO,
+#    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
+#)
+def log_profit(y_true, y_pred, precisions, recalls, thresholds, revenue_cost):
+    # Calculate profit from revenue and cost
+    print("Calculating profit...")
+    revenue_cost = list(revenue_cost)
+    revenue = revenue_cost[0] # Revenue is the first element in the list
+    cost = revenue_cost[1] # Cost is the second element in the list
+    tp = recalls * sum(y_true)  # Recall = TP / (TP + FN) → TP = Recall * (TP + FN)
+    fp = (tp / (precisions + 1e-10)) - tp
+    profits = tp * revenue - fp * cost
 
-    Args:
-        file_path (str): Path to the CSV file.
+    # Find the threshold that maximizes profit
+    max_profit_idx = np.argmax(profits)
+    max_profit = profits[max_profit_idx]
+    max_profit_threshold = thresholds[max_profit_idx]
 
-    Returns:
-        pd.DataFrame: DataFrame of features or target, depending on usage.
-    """
-    logging.info(f"Loading data from: {file_path}")
-    return pd.read_csv(file_path)
-
-
-def evaluate_model(model, X_test: pd.DataFrame, y_test: pd.DataFrame):
-    """
-    Evaluate the model using accuracy score and classification report.
-    Log results to Weights & Biases.
-
-    Args:
-        model: Trained model.
-        X_test (pd.DataFrame): Test features.
-        y_test (pd.Series): True labels for test data.
-    """
-    logging.info("Evaluating model on test set...")
-    y_pred = model.predict(X_test)
-    
-    accuracy = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred, output_dict=True)
-
-    logging.info(f"Accuracy: {accuracy:.4f}")
-    logging.info("Classification Report:")
-    logging.info(classification_report(y_test, y_pred))
-
-    wandb.log({"accuracy": accuracy})
-    # Log additional metrics if desired
-    wandb.log({
-        "precision_1": report["1"]["precision"],
-        "recall_1": report["1"]["recall"],
-        "f1_1": report["1"]["f1-score"]
+    run.log({
+        "max_profit": max_profit,
+        "max_profit_threshold": max_profit_threshold
     })
+    print("Profit calculated and logged.")
 
+    # Log a short summary of the profit
+    summary = f"""
 
-def main():
-    """
-    Main function to evaluate the model and log the metrics to W&B.
-    """
-    wandb.init(project="new_project", notes="Evaluating model", tags=["evaluation"])
+    ## Profit Optimization Summary
 
-    model = load_model("xgboost_model.joblib")
-    X_test = load_data("data/X_test.csv")
-    y_test = load_data("data/y_test.csv")
+    In our current scenario:  
+    - **Revenue per correct prediction:** $ {revenue}  
+    - **Cost per false positive:** $ {cost}  
 
-    if isinstance(y_test, pd.DataFrame):
-        y_test = y_test.iloc[:, 0]
+    The **maximum profit** of **${max_profit:.2f}** is achieved at a **threshold of {max_profit_threshold:.2f}**.  
 
-    evaluate_model(model, X_test, y_test)
+    With this optimal threshold:  
+    - ✅ **True Positives:** {tp[max_profit_idx]:.0f}  
+    - ❌ **False Positives:** {fp[max_profit_idx]:.0f} """
+
+    print(summary)
+    run.log({"profit_summary": wandb.Html(summary)}) # Can be found in the file/media tab of the run
+
+    # Return the profits and the threshold for the plotting method
+    return profits, max_profit_threshold
+
+def plot_profit_per_threshold(precisions, recalls, thresholds, profits, max_profit_threshold):
+
+    # Calculate F1 Score for plotting
+    f1_scores = 2 * (precisions * recalls) / (precisions + recalls + 1e-10)
+    optimal_threshold_for_f1 = thresholds[np.argmax(f1_scores)]
+
+    # Plot Profit vs. Threshold
+    plt.plot(thresholds, profits[:-1], label="Profit Curve", color='blue') # There is one less profit than thresholds
+    plt.axvline(x=max_profit_threshold, color='red', linestyle="--", 
+                label=f"Best Threshold = {max_profit_threshold:.2f}")
     
-    wandb.finish()
+    plt.xlabel("Probability Threshold")
+    plt.ylabel("Profit")
+    plt.title("Optimal Threshold for Maximum Profit")
+    plt.legend(fontsize='small', loc='best')
+
+    # Plot F1 Score vs. Threshold
+    plt.twinx()
+    plt.plot(thresholds, f1_scores[1:], label="F1 Score", color='green', alpha=0.5)
+    plt.axvline(x=optimal_threshold_for_f1, color='orange', linestyle="--", 
+                label=f"Optimal Threshold for F1 = {optimal_threshold_for_f1:.2f}", alpha=0.5 )
+    plt.ylabel("F1 Score")
+    
+    plt.legend(fontsize='small', loc='lower left')
+    run.log({"profit_vs_threshold": wandb.Image(plt)})
+    plt.close()
+
+    return optimal_threshold_for_f1
+
+
+def plot_pr_curve(y_true, y_pred):
+    print("Plotting PR curve...")
+    y_pred = np.vstack([1 - y_pred, y_pred]).T # Add probabilities for the negative class
+    wandb.log({"pr": wandb.plot.pr_curve(y_true, y_pred)})
+    print("PR curve plotted.")
+
+
+def plot_confusion_matrix(y_true, y_pred, labels=[0, 1]):
+    print("Plotting confusion matrix...")
+    wandb.sklearn.plot_confusion_matrix(y_true, y_pred, labels)
+    print("Confusion matrix plotted.")
+
+
+def plot_classification_report(y_true, y_pred):
+    print("Plotting classification report...")
+
+    # Return a classification report results dict
+    report = classification_report(y_true, y_pred, output_dict=True)
+    # Convert the report to a DataFrame
+    report_df = pd.DataFrame(report).transpose()
+    # Convert the DataFrame to a W&B table
+    classification_table = wandb.Table(dataframe=report_df)
+    # Log the table to W&B
+    wandb.log({"classification_report": classification_table})
+
+    print("Classification report plotted.")
+
+
+def extract_correct_and_predicted_targets(df):
+    print("Extracting correct and predicted targets...")
+    y_true = df[TARGET_COLUMN]
+    y_pred = df[PREDICTED_COLUMN]
+    print("Correct and predicted targets extracted.")
+    return y_true, y_pred
+
+
+def load_data(path: str) -> pd.DataFrame:
+    print(f"Loading data from {path}...")
+    df = pd.read_csv(path)
+    print(df.info())
+    print("Data loaded.")
+    return df
 
 
 if __name__ == "__main__":
-    main()
+    print("results.py started...")
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-i", "--input-data-path", default=DEFAULT_CSV_PREDICTIONS_TRAIN_PATH)
+    parser.add_argument("-wgid", "--wandb-group-id", default=None)
+    # parser.add_argument("-cr", "--cost-revenue", default=REVENUE_COST_DICT.values())
+
+    args = parser.parse_args()
+
+    # Resume the run
+    api = wandb.Api()
+    runs = api.runs(f"Y-DATA-Ninjas/{WANDB_PROJECT}")
+    runs_list = list(runs)  # Convert to a list
+    last_run = runs_list[-1] 
+    run = wandb.init(entity="Y-DATA-Ninjas", project=WANDB_PROJECT, id=last_run.id, resume="must")
+    
+    df = load_data(args.input_data_path)
+    y_true, y_pred = extract_correct_and_predicted_targets(df)
+
+    #plot_classification_report(y_true, y_pred)
+
+    #plot_confusion_matrix(y_true, y_pred)
+
+    # plot_pr_curve(y_true, y_pred)
+
+    # TODO: upload prediction errors as tables to W&B
+    # TODO: upload charts:
+    # im = PIL.fromarray()
+    # rgb_im = im.convert('RGB')
+    # rgb_im.save('my_image.jpg')
+    # wandb.log({"example_image": wandb.Image('my_image.jpg')})
+
+    #logging.info("Evaluating model on test set...")
+    #report = classification_report(y_true, y_pred, output_dict=True)
+
+    if set(y_pred.unique()) == {0, 1} or set(y_pred.unique()) == {0} or set(y_pred.unique()) == {1}:
+        print("Calculating metrics for binary classification...")
+        f1=f1_score(y_true, y_pred)
+        precision=precision_score(y_true, y_pred)
+        recall=recall_score(y_true, y_pred)
+        accuracy = accuracy_score(y_true, y_pred)
+
+        run.log({
+            "f1": f1,
+            "precision": precision,
+            "recall": recall,
+            "accuracy": accuracy
+        })
+
+    else:
+        print("Calculating metrics for probabilities - PR curve...")
+
+        # Calculate PR AUC
+        precisions, recalls, thresholds = precision_recall_curve(y_true, y_pred)
+        auc_score = auc(recalls, precisions)
+        run.log({"pr_auc": auc_score})
+
+        # Plot PR curve
+        plot_pr_curve(y_true, y_pred)
+
+        # Calculate profit and log it
+        # profits, max_profit_threshold = log_profit(y_true, y_pred, precisions, recalls, thresholds, args.cost_revenue)
+
+        # Plot profit vs. threshold
+        # optimal_thrshold_for_f1 =  plot_profit_per_threshold(precisions, recalls, thresholds, profits, max_profit_threshold)
+
+
+        # print("Binarizing predictions and calculating metrics for binary classification...")
+        # y_pred = np.where(y_pred > optimal_thrshold_for_f1, 1, 0)
+        y_pred = np.where(y_pred > 0.5, 1, 0)
+        f1=f1_score(y_true, y_pred)
+        precision=precision_score(y_true, y_pred)
+        recall=recall_score(y_true, y_pred)
+        accuracy = accuracy_score(y_true, y_pred)
+
+        run.log({
+            "f1": f1,
+            "precision": precision,
+            "recall": recall,
+            "accuracy": accuracy
+        })
+
+
+    #logging.info(f"Accuracy: {accuracy:.4f}")
+    #logging.info(f"f1: {f1:.4f}")
+    #logging.info(f"precision: {precision:.4f}")
+    #logging.info(f"recall: {recall:.4f}")
+    # logging.info("Classification Report:")
+    # logging.info(classification_report(y_true, y_pred))
+
+    
+    run.finish()
+    print("results.py finished.")

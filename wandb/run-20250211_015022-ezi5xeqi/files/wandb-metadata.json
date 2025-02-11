@@ -1,0 +1,55 @@
+{
+  "os":  "Windows-11-10.0.22631-SP0",
+  "python":  "CPython 3.12.8",
+  "startedAt":  "2025-02-10T23:50:22.908280Z",
+  "args":  [
+    "--wandb-group-id",
+    "experiment-p4m2ybrc",
+    "--num-leaves",
+    "31",
+    "--iterations",
+    "500",
+    "--learning-rate",
+    "0.01",
+    "--eval-metric",
+    "F1",
+    "--depth",
+    "11",
+    "--l2-leaf-reg",
+    "3",
+    "--nan-mode",
+    "Min",
+    "--early-stopping-rounds",
+    "10",
+    "--loss-function",
+    "Logloss",
+    "--class-weights",
+    "Balanced"
+  ],
+  "program":  "C:\\Users\\asafc\\Y-DATA-Ninjas\\train.py",
+  "codePath":  "train.py",
+  "git":  {
+    "remote":  "https://github.com/OphirTuretz/Y-DATA-Ninjas.git",
+    "commit":  "cb99b8233c1acbc808c5b3d924b81aa359be2c03"
+  },
+  "email":  "asafcohe@gmail.com",
+  "root":  "C:\\Users\\asafc\\Y-DATA-Ninjas",
+  "host":  "Asaf",
+  "executable":  "C:\\Users\\asafc\\Y-DATA-Ninjas\\venv\\Scripts\\python.exe",
+  "codePathLocal":  "train.py",
+  "cpu_count":  4,
+  "cpu_count_logical":  8,
+  "disk":  {
+    "/":  {
+      "total":  "491307134976",
+      "used":  "463447654400"
+    }
+  },
+  "memory":  {
+    "total":  "16905961472"
+  },
+  "cpu":  {
+    "count":  4,
+    "countLogical":  8
+  }
+}

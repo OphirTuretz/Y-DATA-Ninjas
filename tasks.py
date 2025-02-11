@@ -1,128 +1,175 @@
-"""
-Module to orchestrate the entire workflow via Invoke tasks.
-
-Best practices:
-1. Provide tasks for each major pipeline step (preprocess, train, predict).
-2. Provide a 'run_all' task to do everything sequentially.
-3. Provide an 'archive' or 'cleanup' task for experiment management.
-"""
-
-import os
-from datetime import datetime
+import itertools
 from invoke import task
-
-DATE_TIME_PATTERN = "%Y%m%d_%H%M%S"
-ARCHIVED_EXPERIMENTS_DIR = "archived_experiments"
-
-@task
-def preprocess(c):
-    """
-    Run the preprocessing script to create train/test splits.
-    """
-    c.run("python preprocess.py")
-
-
-@task
-def train(c):
-    """
-    Run the training script to train the XGBoost model and log to wandb.
-    """
-    c.run("python train.py")
-
-
-<<<<<<< Updated upstream
-@task
-def predict(c):
-    """
-    Run the prediction script on raw_test data using the saved XGBoost model.
-    """
-    c.run("python predict.py")
+from datetime import datetime
+import os
+import wandb
+import shutil
+from dotenv import load_dotenv
+from app.const import (
+    ARCHIVE_FOLDER,
+    DATE_TIME_PATTERN,
+    DEFAULT_CSV_INFERENCE_PATH,
+    DEFAULT_CSV_RAW_INFERENCE_PATH,
+    DEFAULT_CSV_TRAIN_PATH,
+    DEFAULT_CSV_TEST_PATH,
+    CSV_PREDICTIONS_TRAIN_FILENAME,
+    CSV_PREDICTIONS_TEST_FILENAME,
+    DEFAULT_CSV_PREDICTIONS_TRAIN_PATH,
+    DEFAULT_CSV_PREDICTIONS_TEST_PATH,
+    CSV_PREDICTIONS_INFERENCE_FILENAME,
+    UKNOWN_EXPERIMENT_NAME,
+    CSV_RAW_TRAIN_FILENAME,
+    CSV_RAW_INFERENCE_FILENAME,
+    MODEL_GS_PARAM_GRID,
+)
 
 
-@task
-def evaluate(c):
-    """
-    Evaluate the saved model on the test set and log metrics to wandb.
-    """
-    c.run("python results.py")
+def prepare_data_for_pipeline():
+    print("Preparing data for pipeline...")
+    # put the data in central location
 
 
 @task
-def run_all(c):
-    """
-    Run the entire workflow in sequence:
-    1. Preprocess (split data).
-    2. Train (train and save model).
-    3. Predict (generate predictions on raw_test).
-    4. Evaluate (optional step to evaluate on X_test, y_test).
-    """
-    preprocess(c)
-    train(c)
-    # predict(c)
-    evaluate(c)
+def pipeline(c):
+
+    print("Running pipeline...")
+
+    # Loading .env environment variables
+    load_dotenv()
+
+    # Archive the last experiment
+    c.run("inv archive-experiment")
+
+    # prepare_data_for_pipeline()
+
+    # Get all experiment's hyperparameters (the parameters and their corresponding value lists)
+    keys = MODEL_GS_PARAM_GRID.keys()
+    values = MODEL_GS_PARAM_GRID.values()
+
+    # Generate all combinations
+    combinations = itertools.product(*values)
+
+    print("Running experiments...")
+
+    # Iterate over combinations and create a list/tuple of keys and current values
+    for idx, combination in enumerate(combinations):
+
+        # Create a group id that will be shared within the same run
+        wandb_group_id = "experiment-" + wandb.util.generate_id()
+
+        print(f"Running experiment {idx}: {wandb_group_id}...")
+
+        # Get the current combination of parameters
+        param_combination = dict(zip(keys, combination))
+        print(f"Experiment parameters: {param_combination}")
+
+        # Create a formatted string with the parameters
+        formatted_str = " ".join(
+            [
+                f"--{key.replace('_', '-')} {value}"
+                for key, value in param_combination.items()
+            ]
+        )
+
+        # If this is the first experiment, preprocess the raw data
+        if idx == 0:
+            # preprocess raw train data
+            c.run(f"python preprocess.py --wandb-group-id {wandb_group_id}")
+
+        # train
+        c.run(f"python train.py --wandb-group-id {wandb_group_id} {formatted_str}")
+
+        # # predict on train
+        # c.run(
+        #     f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_TRAIN_PATH} --predictions-file-name {CSV_PREDICTIONS_TRAIN_FILENAME}"
+        # )
+
+        # # process train results
+        # c.run(
+        #     f"python results.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_PREDICTIONS_TRAIN_PATH}"
+        # )
+
+        # predict on test
+        c.run(
+            f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_TEST_PATH} --predictions-file-name {CSV_PREDICTIONS_TEST_FILENAME}"
+        )
+
+        # process test results
+        c.run(
+            f"python results.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_PREDICTIONS_TEST_PATH}"
+        )
+
+        # preprocess inference data
+        c.run(
+            f"python preprocess.py --wandb-group-id {wandb_group_id} --inference-run True --csv-raw-path {DEFAULT_CSV_RAW_INFERENCE_PATH}"
+        )
+
+        # predict on inference
+        c.run(
+            f"python predict.py --wandb-group-id {wandb_group_id} --input-data-path {DEFAULT_CSV_INFERENCE_PATH} --predictions-only True --predictions-file-name {CSV_PREDICTIONS_INFERENCE_FILENAME}"
+        )
+
+        print("Experiment finished.")
+
+        c.run(f"inv archive-experiment --name {wandb_group_id} --leave-data True")
+
+    print("All experiments finished.")
+
+    print("Pipeline finished.")
 
 
-@task
-def archive(c, name, base_folder=ARCHIVED_EXPERIMENTS_DIR):
-    """
-    Archive the experiment results by copying
-    data, model artifacts, and wandb logs into a timestamped folder.
-
-    Args:
-        c: Invoke context.
-        name (str): A short descriptive name for the experiment.
-        base_folder (str): Folder to store archived experiments.
-    """
-    timestamp = datetime.now().strftime(DATE_TIME_PATTERN)
-    archive_name = f"{timestamp}_{name}"
-    archive_path = os.path.join(base_folder, archive_name)
-    
-    if not os.path.exists(base_folder):
-        os.makedirs(base_folder)
-
-    c.run(f"mkdir -p {archive_path}")
-
-    # Copy data, model, wandb logs, etc.
-    c.run(f"cp -r data {archive_path} || true")
-    c.run(f"cp xgboost_model.joblib {archive_path} || true")
-    c.run(f"cp -r wandb {archive_path} || true")
-
-    print(f"Archived experiment to: {archive_path}")
-=======
 @task(optional=["name", "base_folder", "leave_data"])
-def archive_experiment(c, name=UKNOWN_EXPERIMENT_NAME, base_folder=ARCHIVE_FOLDER, leave_data=False):
-    from datetime import datetime
-    import os
-    import shutil
-    # Create experiment folder with timestamp
+def archive_experiment(
+    c, name=UKNOWN_EXPERIMENT_NAME, base_folder=ARCHIVE_FOLDER, leave_data=False
+):
+
     name = f"{datetime.now().strftime(DATE_TIME_PATTERN)}_{name}"
-    print(f"Archiving experiment {name}...")
+
+    print(f"archiving experiment {name}...")
+
+    # check if base folder exists (archive folder)
+    # if not os.path.exists(base_folder):
+    #     os.makedirs(base_folder)
+    # Ensure base folder exists
     os.makedirs(base_folder, exist_ok=True)
+
+    # Create experiment folder
+    # exp_path = f"{base_folder}/{name}"
+    # c.run(f"mkdir {exp_path}")
     exp_path = os.path.join(base_folder, name)
     os.makedirs(exp_path, exist_ok=True)
-    
-    # Archive data folder
+
+    # Initialize "data" folder
     if os.path.exists("data"):
+        # c.run(f"mv data {exp_path}")
+        # c.run("mkdir data")
         shutil.move("data", exp_path)
         os.makedirs("data", exist_ok=True)
+
         if leave_data:
+            # c.run(f"cp {exp_path}/data/* data/")
             for file in os.listdir(os.path.join(exp_path, "data")):
                 shutil.copy(os.path.join(exp_path, "data", file), "data")
         else:
+            # c.run(f"cp {exp_path}/data/{CSV_RAW_TRAIN_FILENAME} data/")
+            # c.run(f"cp {exp_path}/data/{CSV_RAW_INFERENCE_FILENAME} data/")
             for file in [CSV_RAW_TRAIN_FILENAME, CSV_RAW_INFERENCE_FILENAME]:
                 src_file = os.path.join(exp_path, "data", file)
                 if os.path.exists(src_file):
                     shutil.copy(src_file, "data")
-    
-    # Archive results folder
+
+    # Initialize results folder
     if os.path.exists("results"):
+        # c.run(f"mv results {exp_path}")
+        # c.run("mkdir results")
         shutil.move("results", exp_path)
         os.makedirs("results", exist_ok=True)
-    
-    # Do not move models folder - keep it intact
-    if os.path.exists("models"):
-        print("Skipping archiving of the 'models' folder.")
-    
-    print("Experiment archived.")
 
->>>>>>> Stashed changes
+    # Initialize models folder
+    if os.path.exists("models"):
+        # c.run(f"mv models {exp_path}")
+        # c.run("mkdir models")
+        shutil.move("models", exp_path)
+        os.makedirs("models", exist_ok=True)
+
+    print("experiment archived.")

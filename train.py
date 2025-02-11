@@ -1,144 +1,160 @@
-"""
-Module for training an XGBoost model on preprocessed data.
-
-Best practices:
-1. Clear separation of data loading, training, and evaluation steps.
-2. Logging for training progress and errors.
-3. Weights & Biases integration for experiment tracking.
-"""
-
-import logging
-import pandas as pd
-import xgboost as xgb
-from sklearn.metrics import accuracy_score, classification_report
-import joblib
+import os
 import wandb
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s"
+import pickle
+import argparse
+import numpy as np
+import pandas as pd
+from typing import Tuple
+from sklearn.dummy import DummyClassifier
+from catboost import CatBoostClassifier
+from app.const import (
+    DEFAULT_CSV_TRAIN_PATH,
+    FEATURES_LIST,
+    TARGET_COLUMN,
+    MODELS_FOLDER,
+    DEFAULT_MODEL_PATH,
+    WANDB_PROJECT,
+    CATEGORICAL_FEATURES_CATBOOST,
+    FEATURES_TYPE_MAP,
 )
 
-def load_data():
-    """
-    Load the training and testing data from CSV files.
 
-    Returns:
-        Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]: X_train, X_test, y_train, y_test
-    """
-    logging.info("Loading train/test split data.")
-    X_train = pd.read_csv("data/X_train.csv")
-    X_test = pd.read_csv("data/X_test.csv")
-    y_train = pd.read_csv("data/y_train.csv")
-    y_test = pd.read_csv("data/y_test.csv")
+def save_model(model):
+    print(f"Saving model...")
 
-    # Convert target from DataFrame to Series if needed
-    if isinstance(y_train, pd.DataFrame):
-        y_train = y_train.iloc[:, 0]
-    if isinstance(y_test, pd.DataFrame):
-        y_test = y_test.iloc[:, 0]
+    if not os.path.exists(MODELS_FOLDER):
+        os.makedirs(MODELS_FOLDER)
 
-    logging.info(f"Data loaded: X_train={X_train.shape}, X_test={X_test.shape}")
-    return X_train, X_test, y_train, y_test
+    with open(DEFAULT_MODEL_PATH, "wb") as f:
+        pickle.dump(model, f)
+
+    print("Model saved.")
 
 
-def train_model(X_train, y_train, **kwargs) -> xgb.XGBClassifier:
-    """
-    Train an XGBoost model.
-
-    Args:
-        X_train (pd.DataFrame): Training features.
-        y_train (pd.Series): Training target.
-        **kwargs: Additional hyperparameters for XGBoost.
-
-    Returns:
-        xgb.XGBClassifier: Trained XGBoost model.
-    """
-    logging.info("Initializing XGBoost model...")
-    model = xgb.XGBClassifier(**kwargs)
-    model.fit(X_train, y_train)
-    logging.info("Model training complete.")
+def fit_model(model, X, y, categorical_features):
+    print("Fitting model...")
+    model.fit(X, y, cat_features=categorical_features)
+    print("Model fitted.")
     return model
 
 
-def evaluate_model(model, X_test, y_test):
-    """
-    Evaluate the model and log results to Weights & Biases.
-
-    Args:
-        model (xgb.XGBClassifier): Trained XGBoost model.
-        X_test (pd.DataFrame): Test features.
-        y_test (pd.Series): Test target.
-    """
-    logging.info("Evaluating the model...")
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred, output_dict=True)
-
-    logging.info(f"Test Accuracy: {accuracy:.4f}")
-    logging.info("Classification Report:")
-    logging.info(classification_report(y_test, y_pred))
-
-    # Log metrics to wandb
-    wandb.log({
-        "accuracy": accuracy,
-        # Convert the classification report (dict) into separate logs if desired
-        "precision": report["1"]["precision"],
-        "recall": report["1"]["recall"],
-        "f1-score": report["1"]["f1-score"]
-    })
+def prepare_data(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    print("Preparing data...")
+    print("Extracting features...")
+    X = df[FEATURES_LIST]
+    # cat_features must be integer or string, real number values and NaN values should be converted to string.
+    X[CATEGORICAL_FEATURES_CATBOOST] = X[CATEGORICAL_FEATURES_CATBOOST].astype(str)
+    print("Features extracted.")
+    print("Extracting target...")
+    y = df[TARGET_COLUMN]
+    print("Target extracted.")
+    print("Data prepared.")
+    return X, y
 
 
-def save_model(model, file_path: str):
-    """
-    Save the trained model to a file.
-
-    Args:
-        model (xgb.XGBClassifier): Trained model.
-        file_path (str): Output file path.
-    """
-    logging.info(f"Saving model to: {file_path}")
-    joblib.dump(model, file_path)
-    logging.info("Model saved.")
-
-
-def main():
-    """
-    Main execution function for training.
-    1. Initializes wandb for experiment tracking.
-    2. Loads data.
-    3. Trains the model.
-    4. Evaluates the model and logs metrics.
-    5. Saves the trained model artifact.
-    """
-    wandb.init(project="new_project", notes="Training XGBoost model", tags=["training"])
-
-    X_train, X_test, y_train, y_test = load_data()
-
-    n_neg = sum(y_train == 0)
-    n_pos = sum(y_train == 1)
-    scale_pos_weight = n_neg / n_pos
-
-
-    # You can insert hyperparameters here (e.g., n_estimators=100, learning_rate=0.1)
-    model = train_model(
-        X_train, y_train, 
-        n_estimators=100, 
-        learning_rate=0.1, 
-        enable_categorical=True, 
-        scale_pos_weight=scale_pos_weight, 
-        max_depth=6,
-        min_child_weight=5,
-        subsample=0.8,
-        colsample_bytree=0.8
-    )
-
-    evaluate_model(model, X_test, y_test)
-    save_model(model, "xgboost_model.joblib")
-
-    wandb.finish()
+def load_data(path: str) -> pd.DataFrame:
+    print(f"Loading data from {path}...")
+    df = pd.read_csv(path, dtype=FEATURES_TYPE_MAP)
+    print(df.info())
+    print("Data loaded.")
+    return df
 
 
 if __name__ == "__main__":
-    main()
+    print("train.py started...")
+
+    # Argument parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-ctp", "--csv-train-path", default=DEFAULT_CSV_TRAIN_PATH, type=str
+    )
+    parser.add_argument("-wgid", "--wandb-group-id", default=None)
+    parser.add_argument(
+        "-m", "--model", default="CatBoostClassifier", help="Model to use"
+    )
+    parser.add_argument(
+        "-mn", "--model-name", default="CatBoost", help="Custom model name"
+    )
+
+    # Hyperparameters
+    parser.add_argument(
+        "-nl",
+        "--num-leaves",
+        default=None,
+        type=int,
+        help="Number of leaves in the tree",
+    )
+    parser.add_argument(
+        "-i", "--iterations", default=100, type=int, help="Number of iterations"
+    )
+    parser.add_argument(
+        "-lr", "--learning-rate", default=0.2, type=float, help="Learning rate"
+    )
+    parser.add_argument("-em", "--eval-metric", default="F1", help="Evaluation metric")
+    parser.add_argument("-d", "--depth", default=6, type=int, help="Depth of the tree")
+    parser.add_argument(
+        "-l2", "--l2-leaf-reg", default=3, type=float, help="L2 regularization"
+    )
+    parser.add_argument("-nm", "--nan-mode", default="Min", help="NaN handling mode")
+    parser.add_argument(
+        "-esr",
+        "--early-stopping-rounds",
+        default=10,
+        type=int,
+        help="Early stopping rounds",
+    )
+    parser.add_argument(
+        "-l", "--loss-function", default="Logloss", help="Loss function"
+    )
+    parser.add_argument("-cw", "--class-weights", default='Balanced', help="Class weights")
+
+    args = parser.parse_args()
+
+    # Load and prepare data
+    train_df = load_data(args.csv_train_path)
+    X_train, y_train = prepare_data(train_df)
+
+    # Check if class weights are provided
+    if args.class_weights is not None:
+        if args.class_weights != "Balanced":
+            args.class_weights = None
+        else:
+            # Compute class weights
+            pos_ratio = y_train.sum() / len(y_train)
+            neg_ratio = 1 - pos_ratio
+            args.class_weights = [1, neg_ratio / pos_ratio]
+
+    ModelClass = CatBoostClassifier
+
+    hyperparams = {
+        "num_leaves": args.num_leaves,
+        "iterations": args.iterations,
+        "learning_rate": args.learning_rate,
+        "eval_metric": args.eval_metric,
+        "depth": args.depth,
+        "l2_leaf_reg": args.l2_leaf_reg,
+        "nan_mode": args.nan_mode,
+        "early_stopping_rounds": args.early_stopping_rounds,
+        "loss_function": args.loss_function,
+        "class_weights": args.class_weights,
+    }
+
+    model = ModelClass(**hyperparams)
+
+    # Initialize W&B
+    run = wandb.init(
+        project=WANDB_PROJECT,
+        group=args.wandb_group_id,
+        job_type="train_predict",
+        config=None,
+    )
+    run.log({"model": args.model_name})
+    run.log(hyperparams)
+
+    # Train model
+    model = fit_model(model, X_train, y_train, CATEGORICAL_FEATURES_CATBOOST)
+
+    # Save model
+    save_model(model)
+
+    print("train.py finished.")

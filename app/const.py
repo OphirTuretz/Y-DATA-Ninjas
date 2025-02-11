@@ -1,11 +1,11 @@
 import os
+import numpy as np
 
 DATA_FOLDER = "data"
-CSV_RAW_FILENAME = "train_dataset_full.csv"
+MODELS_FOLDER = "models"
+RESULTS_FOLDER = "results"
+ARCHIVE_FOLDER = "archived_experiments"
 
-<<<<<<< Updated upstream
-DEFAULT_CSV_RAW_PATH = os.path.join(DATA_FOLDER, CSV_RAW_FILENAME)
-=======
 UKNOWN_EXPERIMENT_NAME = "unknown_experiment"
 
 CSV_RAW_TRAIN_FILENAME = "train_dataset_full.csv"
@@ -49,22 +49,6 @@ FEATURES_LIST = [
     "campaign_id",
     "product_category_1",
     "product_category_2",
-<<<<<<< Updated upstream
-    "gender_Male",            # one-hot encoded gender dummy
-    "age_level",
-    "user_depth",
-    "city_development_index",
-    "var_1_bin",
-    "hour",
-    "day",
-    "user_session_count",
-    "user_click_count",
-    "user_ctr"
-]
-
-FEATURES_TYPE_MAP = {
-    "product": "str",                      # or "category" if you prefer
-=======
     "gender_Male",           # one-hot encoded gender
     "age_level",
     "user_depth",
@@ -72,42 +56,36 @@ FEATURES_TYPE_MAP = {
     "var_1_bin",             # binarized version of var_1
     "hour",
     "day",
-    "user_session_count",    # new user behavior feature
-    "user_click_count",      # new user behavior feature
-    "user_ctr"               # new user behavior feature
+    "user_session_count",    # new feature
+    "user_click_count",      # new feature
+    "user_ctr"               # new feature
 ]
 
 FEATURES_TYPE_MAP = {
-    "product": "str",                      # or "category" if preferred
->>>>>>> Stashed changes
+    "product": "str",
     "campaign_id": "float64",
     "product_category_1": "float64",
     "product_category_2": "float64",
-    "gender_Male": "int8",                  # one-hot encoded binary column (0 or 1)
+    "gender_Male": "int8",
     "age_level": "float64",
     "user_depth": "float64",
     "city_development_index": "float64",
-    "var_1_bin": "int8",                    # binary version of var_1
+    "var_1_bin": "int8",
     "hour": "int8",
     "day": "int8",
-    "user_session_count": "int32",          # new feature: count of sessions per user
-    "user_click_count": "int32",            # new feature: count of clicks per user
-    "user_ctr": "float64"                   # new feature: click-through rate per user
+    "user_session_count": "int32",
+    "user_click_count": "int32",
+    "user_ctr": "float64"
 }
 
-<<<<<<< Updated upstream
-# For CatBoost, you typically specify the names of the categorical features.
-# Since you have one-hot encoded 'gender', and replaced 'var_1' with 'var_1_bin' (which is numeric),
-# the remaining categorical features may just be:
-=======
->>>>>>> Stashed changes
 CATEGORICAL_FEATURES_CATBOOST = [
     "product",
     "campaign_id",
     "product_category_1",
-    "product_category_2"
+    "product_category_2",
+    # "gender",
+    # "var_1",
 ]
-
 TARGET_COLUMN = "is_click"
 PREDICTED_COLUMN = TARGET_COLUMN + "_predicted"
 
@@ -115,11 +93,7 @@ DEFAULT_PREDICTIONS_ONLY = False
 
 DATE_TIME_PATTERN = "%Y-%m-%d_%H-%M-%S"
 
-<<<<<<< Updated upstream
-WANDB_PROJECT = "asaf_run"
-=======
 WANDB_PROJECT = "asaf-run"
->>>>>>> Stashed changes
 
 # https://catboost.ai/docs/en/references/custom-metric__supported-metrics
 # https://catboost.ai/docs/en/references/training-parameters/common
@@ -135,4 +109,9 @@ MODEL_GS_PARAM_GRID = {
     "loss_function": ["Logloss"],
     "class_weights": ["Balanced"],  # ["Default", "Balanced"],
 }
->>>>>>> Stashed changes
+
+REVENUE_COST_DICT  = {'revenue': 2, 'cost': 0.02}
+
+STREAMLIT_OUTPUT_FILE_NAME_PREFIX = "predictions"
+STREAMLIT_INPUT_FILE_NAME_PREFIX = "raw_inference"
+STREAMLIT_PREPROCESSED_FILE_NAME_PREFIX = "inference"
