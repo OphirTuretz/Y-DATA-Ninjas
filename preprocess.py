@@ -246,7 +246,7 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
         'click_ratio2',
         'click_ratio_prod',
         'user_max_click_ratio2',
-        #'click_ratio1',
+        # 'click_ratio1',
         'user_max_click_ratio1',
         'user_max_click_ratio_prod',
 
@@ -357,7 +357,7 @@ def preprocess_raw_train(
                 comparison_results.append(comparison_df)
 
             # Start debugging right before printing
-            #breakpoint()  # <-- This will trigger the debugger
+            # breakpoint()  # <-- This will trigger the debugger
 
             for i, comp_df in enumerate(comparison_results):
                 print(f"\n===== Comparison for {columns[i]} =====")
