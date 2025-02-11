@@ -243,8 +243,8 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
         "current_same_campaign_freq",  #
         "current_same_product_freq",  #
 
-        # "product_category_2"
-        # 'click_ratio2',
+        "product_category_2"
+        'click_ratio2',
         'click_ratio_prod',
         'user_max_click_ratio2',
         'click_ratio1',
@@ -367,8 +367,8 @@ def preprocess_raw_train(
         # List of columns to compare
         columns_to_compare = [
             'is_click', 'gender', 'age_level',
-            'user_depth', 'product', 'product_category_2', 'product_category_1'
-        ]
+            'user_depth', 'product',  'product_category_1'
+        ] # 'product_category_2',
 
         # Call the function
         compare_distributions(train_df, test_df, columns_to_compare)
