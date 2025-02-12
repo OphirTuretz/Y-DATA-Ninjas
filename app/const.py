@@ -58,15 +58,15 @@ FEATURES_LIST = [
     "day",
 
 
-    "first_day", #
-    "session_freq", #
-    "is_more_than_once", #
-    "same_campaign_freq", #
-    "same_product_freq", #
-    "current_session_freq",  #
-    "current_is_more_than_once",  #
-    "current_same_campaign_freq",  #
-    "current_same_product_freq",  #
+    "first_day",
+    "session_freq",
+    "is_more_than_once",
+    "same_campaign_freq",
+    "same_product_freq",
+    "current_session_freq",
+    "current_is_more_than_once",
+    "current_same_campaign_freq",
+    "current_same_product_freq",
 
 
     'click_ratio2',
@@ -74,7 +74,7 @@ FEATURES_LIST = [
     'user_max_click_ratio2',
     'click_ratio1',
     'user_max_click_ratio1',
-    'user_max_click_ratio_prod',
+    'user_max_click_ratio_prod'
 ]
 FEATURES_TYPE_MAP = {
     "product": "str",

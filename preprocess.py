@@ -233,23 +233,23 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     columns_to_drop = [
         "date",
         "min_date",
-        "first_day", #
-        "session_freq", #
-        "is_more_than_once", #
-        "same_campaign_freq", #
-        "same_product_freq", #
-        "current_session_freq",  #
-        "current_is_more_than_once",  #
-        "current_same_campaign_freq",  #
-        "current_same_product_freq",  #
-
-        "product_category_2",
-        'click_ratio2',
-        'click_ratio_prod',
-        'user_max_click_ratio2',
-        'click_ratio1',
-        'user_max_click_ratio1',
-        'user_max_click_ratio_prod',
+        # "first_day", #
+        # "session_freq", #
+        # "is_more_than_once", #
+        # "same_campaign_freq", #
+        # "same_product_freq", #
+        # "current_session_freq",  #
+        # "current_is_more_than_once",  #
+        # "current_same_campaign_freq",  #
+        # "current_same_product_freq",  #
+        #
+        # "product_category_2",
+        # 'click_ratio2',
+        # 'click_ratio_prod',
+        # 'user_max_click_ratio2',
+        # 'click_ratio1',
+        # 'user_max_click_ratio1',
+        # 'user_max_click_ratio_prod',
 
         "user_group_id",
         "DateTime",
