@@ -69,12 +69,12 @@ FEATURES_LIST = [
     "current_same_product_freq",
 
 
-    'click_ratio2',
-    'click_ratio_prod',
-    'user_max_click_ratio2',
-    'click_ratio1',
-    'user_max_click_ratio1',
-    'user_max_click_ratio_prod'
+    # 'click_ratio2',
+    # 'click_ratio_prod',
+    # 'user_max_click_ratio2',
+    # 'click_ratio1',
+    # 'user_max_click_ratio1',
+    # 'user_max_click_ratio_prod'
 ]
 FEATURES_TYPE_MAP = {
     "product": "str",
