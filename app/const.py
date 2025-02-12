@@ -48,7 +48,7 @@ FEATURES_LIST = [
     "product",
     "campaign_id",
     "product_category_1",
-    # "product_category_2",
+    "product_category_2",
     "gender",
     "age_level",
     "user_depth",
@@ -56,6 +56,25 @@ FEATURES_LIST = [
     "var_1",
     "hour",
     "day",
+
+
+    "first_day", #
+    "session_freq", #
+    "is_more_than_once", #
+    "same_campaign_freq", #
+    "same_product_freq", #
+    "current_session_freq",  #
+    "current_is_more_than_once",  #
+    "current_same_campaign_freq",  #
+    "current_same_product_freq",  #
+
+
+    'click_ratio2',
+    'click_ratio_prod',
+    'user_max_click_ratio2',
+    'click_ratio1',
+    'user_max_click_ratio1',
+    'user_max_click_ratio_prod',
 ]
 FEATURES_TYPE_MAP = {
     "product": "str",

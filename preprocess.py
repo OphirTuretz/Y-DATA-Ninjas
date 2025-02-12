@@ -243,7 +243,7 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
         "current_same_campaign_freq",  #
         "current_same_product_freq",  #
 
-        #"product_category_2",
+        "product_category_2",
         'click_ratio2',
         'click_ratio_prod',
         'user_max_click_ratio2',
