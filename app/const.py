@@ -37,6 +37,9 @@ DEFAULT_CSV_PREDICTIONS_INFERENCE_PATH = os.path.join(
     RESULTS_FOLDER, CSV_PREDICTIONS_INFERENCE_FILENAME
 )
 
+DEFAULT_ARCHIVE_EXPERIMENT = False
+DEFAULT_PREDICT_INFERENCE = False
+
 DEFAULT_REMOVE_DUPLICATES = True
 DEFAULT_REMOVE_MISSING_TARGET = True
 DEFAULT_MAKE_INFERENCE = False
@@ -101,9 +104,25 @@ MODEL_GS_PARAM_GRID = {
     "loss_function": ["Logloss"],
     "class_weights": ["Balanced"],  # ["Default", "Balanced"],
 }
+RANDOM_STATE_LIST = [DEFAULT_RANDOM_STATE]
 
-REVENUE_COST_DICT  = {'revenue': 2, 'cost': 0.02}
+FINAL_MODEL_PARAM = {
+    "num_leaves": 31,
+    "iterations": 500,
+    "learning_rate": 0.01,
+    "eval_metric": "F1",
+    "depth": 11,  # np.arange(4, 11, 2),
+    "l2_leaf_reg": 3,
+    "nan_mode": "Min",
+    "early_stopping_rounds": 10,
+    "loss_function": "Logloss",
+    "class_weights": "Balanced",  # ["Default", "Balanced"],
+}
+
+REVENUE_COST_DICT = {"revenue": 2, "cost": 0.02}
 
 STREAMLIT_OUTPUT_FILE_NAME_PREFIX = "predictions"
 STREAMLIT_INPUT_FILE_NAME_PREFIX = "raw_inference"
 STREAMLIT_PREPROCESSED_FILE_NAME_PREFIX = "inference"
+
+COMPUTE_METRICS_DEFAULT_THR = 0.5
