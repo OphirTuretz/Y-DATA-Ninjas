@@ -48,7 +48,7 @@ FEATURES_LIST = [
     "product",
     "campaign_id",
     "product_category_1",
-    "product_category_2",
+    # "product_category_2",
     "gender",
     "age_level",
     "user_depth",
@@ -74,7 +74,7 @@ CATEGORICAL_FEATURES_CATBOOST = [
     "product",
     "campaign_id",
     "product_category_1",
-    "product_category_2",
+    # "product_category_2",
     # "gender",
     # "var_1",
 ]
