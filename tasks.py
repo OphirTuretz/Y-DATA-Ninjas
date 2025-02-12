@@ -33,11 +33,6 @@ from app.const import (
 from app.utils import str2bool
 
 
-def prepare_data_for_pipeline():
-    print("Preparing data for pipeline...")
-    # put the data in central location
-
-
 @task(optional=["archive_experiment", "predict_inference"])
 def pipeline(
     c,
@@ -62,14 +57,12 @@ def pipeline(
         # Delete the last experiment
         c.run("inv clear-experiment")
 
-    # prepare_data_for_pipeline()
-
     # Get all experiment's hyperparameters (the parameters and their corresponding value lists)
     keys = MODEL_GS_PARAM_GRID.keys()
     values = MODEL_GS_PARAM_GRID.values()
 
     # Generate all combinations
-    combinations = itertools.product(*values)
+    combinations = list(itertools.product(*values))
 
     print("Running experiments...")
 
@@ -180,7 +173,7 @@ def train_all_train(
     # Create a group id that will be shared within the same run
     wandb_group_id = "experiment-" + wandb.util.generate_id()
 
-    print(f"Running experiment {idx}: {wandb_group_id}...")
+    print(f"Running experiment: {wandb_group_id}...")
 
     param_combination = FINAL_MODEL_PARAM
 
@@ -252,7 +245,7 @@ def predict_inference(c):
 
 @task(optional=["thr"])
 def compute_metrics(
-    y_true_file_path, y_pred_file_path, thr=COMPUTE_METRICS_DEFAULT_THR
+    c, y_true_file_path, y_pred_file_path, thr=COMPUTE_METRICS_DEFAULT_THR
 ):
 
     y_true = pd.read_csv(y_true_file_path, names=["is_click"])
